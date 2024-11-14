@@ -3,10 +3,13 @@ package data
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"pv-server/data/states"
 	st "pv-server/data/states"
 	"pv-server/util"
+
+	"github.com/gorilla/websocket"
 )
 
 type ServerData struct {
@@ -110,4 +113,68 @@ func (s *ServerData) HandlePostMessage(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
+}
+
+// Websocket implementation
+var upgrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+	CheckOrigin:     func(r *http.Request) bool { return true }, // allow any connections to this endpoint regardless of what it is
+}
+
+func (s *ServerData) HandleWS(w http.ResponseWriter, r *http.Request) {
+	s.Info.CountRequests()
+
+	// upgrade the connection
+	ws, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		log.Println(err)
+	}
+	log.Printf("Client Successfully Connected: %s", r.RemoteAddr)
+
+	// start reading
+	reader(ws)
+}
+func reader(conn *websocket.Conn) {
+	for {
+
+		// receive a message when it arrives
+		msgType, msgBody, err := conn.ReadMessage()
+		if err != nil {
+			log.Println(err)
+			return
+		}
+
+		// parse it
+		msg, err := parseWebSocketMessage(msgType, msgBody)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		log.Printf("Message received from %s: %s", conn.RemoteAddr(), msg)
+
+		// process it
+		res := processMessage(msg)
+
+		// send a result message
+		sender(conn, websocket.TextMessage, []byte(res))
+	}
+}
+func sender(conn *websocket.Conn, messageType int, msgBody []byte) {
+	if err := conn.WriteMessage(messageType, msgBody); err != nil {
+		log.Println(err)
+		return
+	}
+}
+func parseWebSocketMessage(msgType int, msgBody []byte) (string, error) {
+	switch msgType {
+	case websocket.TextMessage:
+		return string(msgBody), nil
+	//case websocket.BinaryMessage: // todo: implement
+	default:
+		return "", fmt.Errorf("unsupported message type: %d", msgType)
+	}
+}
+func processMessage(msgBody string) string {
+	return fmt.Sprintf("Processed message: %s", msgBody)
 }

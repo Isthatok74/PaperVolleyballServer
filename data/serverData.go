@@ -14,15 +14,14 @@ import (
 
 type ServerData struct {
 	Info    states.ServerState
-	Games   map[string]states.GameState
+	Games   sync.Map
 	Clients sync.Map
 }
 
 // Constructor function to initialize ServerData
 func NewServerData() *ServerData {
 	serverData := &ServerData{
-		Info:  *states.NewServerState(),          // Initialize Info field with zero value
-		Games: make(map[string]states.GameState), // Initialize Games as an empty map
+		Info: *states.NewServerState(), // Initialize Info field with zero value
 	}
 	return serverData
 }
@@ -30,10 +29,14 @@ func NewServerData() *ServerData {
 // FindGame searches for a game by its ID and returns the GameState if found, or an error if not.
 func (s *ServerData) FindGame(id string) (*states.GameState, error) {
 	// Look up the game by ID in the map
-	game, exists := s.Games[id]
+	value, exists := s.Games.Load(id)
 	if !exists {
 		// If the game is not found, return nil and an error
 		return nil, fmt.Errorf("game not found with ID %s", id)
+	}
+	game, ok := value.(states.GameState)
+	if !ok {
+		return nil, fmt.Errorf("value is not of type *GameState")
 	}
 	// Return the found game and nil error
 	return &game, nil
@@ -47,13 +50,13 @@ func (s *ServerData) HandlePing(w http.ResponseWriter, r *http.Request) {
 func (s *ServerData) HandleStatus(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Server start time: %s \n", s.Info.StartTime)
 	fmt.Fprintf(w, "Number of requests processed: %d \n", s.Info.ReqCount)
-	fmt.Fprintf(w, "Number of active games: %d \n", len(s.Games))
+	fmt.Fprintf(w, "Number of active games: %d \n", util.GetSyncMapSize(&(s.Games)))
 	fmt.Fprintf(w, "Number of clients connected: %d\n", util.GetSyncMapSize(&(s.Clients)))
 }
 
 func (s *ServerData) HandleCreate(w http.ResponseWriter, r *http.Request) {
 	gameState := *states.NewGameState()
-	s.Games[gameState.ID] = gameState
+	s.Games.LoadOrStore(gameState.ID, gameState)
 	fmt.Fprintf(w, "Created game with ID: %s \n", gameState.ID)
 }
 
@@ -64,17 +67,16 @@ func (s *ServerData) HandleAddPlayer(w http.ResponseWriter, r *http.Request) {
 	gameID := r.URL.Query().Get("gameID") // Example URL: /addplayer?gameID={guid}
 
 	// Check if the game exists
-	game, exists := s.Games[gameID]
-	if !exists {
-		http.Error(w, "Game not found", http.StatusNotFound)
-		return
+	game, err := s.FindGame(gameID)
+	if err != nil {
+		http.Error(w, "Failed to add player to game", http.StatusInternalServerError)
 	}
 
 	// Decode the JSON body to get player information
 	newPlayer := states.NewPlayerState()
 
 	// Add the player to the game
-	game.Players[newPlayer.ID] = *newPlayer
+	game.UpdatePlayer(newPlayer)
 
 	// Respond with the updated game state
 	fmt.Fprintf(w, "In game %s added player: %s\n", game.ID, newPlayer.ID)
@@ -97,14 +99,14 @@ func (s *ServerData) HandlePost(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to decode JSON", http.StatusBadRequest)
 		return
 	}
-	wm.HandlePost(s)
 
 	// Process the message (for now, we just print it to the console)
-	fmt.Printf("Received message: %+v\n", wm)
+	fmt.Printf("Message received: %s\n", wm.Data)
+	result := wm.HandlePost(s)
 
 	// Respond with a simple success message
 	response := map[string]string{
-		"status": "Message received successfully",
+		"status": result,
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)

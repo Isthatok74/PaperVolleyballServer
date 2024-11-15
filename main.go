@@ -36,10 +36,10 @@ func main() {
 func setupRoutesHTTP() {
 	http.Handle("/ping", rateLimitHandler(http.HandlerFunc(serverData.HandlePing), &(serverData.Info)))
 	http.Handle("/status", rateLimitHandler(http.HandlerFunc(serverData.HandleStatus), &(serverData.Info)))
-
-	// todo: remove obsolete
 	http.Handle("/create", rateLimitHandler(http.HandlerFunc(serverData.HandleCreate), &(serverData.Info)))
 	http.Handle("/addplayer", rateLimitHandler(http.HandlerFunc(serverData.HandleAddPlayer), &(serverData.Info)))
+
+	// unused
 	http.Handle("/post", rateLimitHandler(http.HandlerFunc(serverData.HandlePost), &(serverData.Info)))
 }
 

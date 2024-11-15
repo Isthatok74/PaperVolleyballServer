@@ -1,12 +1,13 @@
 package states
 
+// represents a game instance on the server, with all its associated data stored
 type GameState struct {
 	BaseState
 	Ball    *BallState             `json:"Ball"`
 	Players map[string]PlayerState `json:"Players"`
 }
 
-// Initialize a new gameState object
+// initialize a new gameState object
 func NewGameState() *GameState {
 	gameState := &GameState{
 		Ball:    nil,                          // no ball exists yet
@@ -16,10 +17,12 @@ func NewGameState() *GameState {
 	return gameState
 }
 
+// updpate the player data on the map
 func (g *GameState) UpdatePlayer(p *PlayerState) {
 	g.Players[p.ID] = *p
 }
 
+// update the ball data on the map
 func (g *GameState) UpdateBall(b *BallState) {
 	g.Ball = b
 }

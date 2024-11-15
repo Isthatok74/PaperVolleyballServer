@@ -12,13 +12,15 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+// Purpose: A container for all the data tracked by the server in real time
+
 type ServerData struct {
-	Info    states.ServerState
-	Games   sync.Map
-	Clients sync.Map
+	Info    states.ServerState // vitals
+	Games   sync.Map           // a map of all ongoing games hosted on this server
+	Clients sync.Map           // a map of all connected players hosted on this server
 }
 
-// Constructor function to initialize ServerData
+// constructor function to initialize ServerData
 func NewServerData() *ServerData {
 	serverData := &ServerData{
 		Info: *states.NewServerState(), // Initialize Info field with zero value
@@ -26,27 +28,36 @@ func NewServerData() *ServerData {
 	return serverData
 }
 
-// FindGame searches for a game by its ID and returns the GameState if found, or an error if not.
+// searches for a game by its ID and returns the GameState if found, or nil along with an error if not.
 func (s *ServerData) FindGame(id string) (*states.GameState, error) {
-	// Look up the game by ID in the map
+
+	// look up the game by ID in the map
 	value, exists := s.Games.Load(id)
 	if !exists {
-		// If the game is not found, return nil and an error
+
+		// if the game is not found, return nil and an error
 		return nil, fmt.Errorf("game not found with ID %s", id)
 	}
+
+	// attempt to cast it to what it should be, in order to return the correct object
 	game, ok := value.(states.GameState)
 	if !ok {
+
+		// if somehow the game isn't the correct type, return nil and an error
 		return nil, fmt.Errorf("value is not of type *GameState")
 	}
-	// Return the found game and nil error
+
+	// return a pointer to the found game and nil error
 	return &game, nil
 }
 
+// handle the ping route on http - simply returns the current server time
 func (s *ServerData) HandlePing(w http.ResponseWriter, r *http.Request) {
 	currentTime := util.CurrentTimeUTC().Format("15:04:05.000")
 	fmt.Fprintf(w, "%s", currentTime)
 }
 
+// handle the status route on http - returns some server metrics
 func (s *ServerData) HandleStatus(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Server start time: %s \n", s.Info.StartTime)
 	fmt.Fprintf(w, "Number of requests processed: %d \n", s.Info.ReqCount)
@@ -54,31 +65,32 @@ func (s *ServerData) HandleStatus(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Number of clients connected: %d\n", util.GetSyncMapSize(&(s.Clients)))
 }
 
+// handle the creation of a game instance on the server
 func (s *ServerData) HandleCreate(w http.ResponseWriter, r *http.Request) {
 	gameState := *states.NewGameState()
 	s.Games.LoadOrStore(gameState.ID, gameState)
 	fmt.Fprintf(w, "Created game with ID: %s \n", gameState.ID)
 }
 
-// AddPlayerToGame is the handler that adds a player to an existing game
+// handle registering player to an existing game
 func (s *ServerData) HandleAddPlayer(w http.ResponseWriter, r *http.Request) {
 
-	// Get the game GUID from the URL path (assuming it's a part of the URL like /games/{guid}/addplayer)
+	// get the game GUID from the URL path (assuming it's a part of the URL like /games/{guid}/addplayer)
 	gameID := r.URL.Query().Get("gameID") // Example URL: /addplayer?gameID={guid}
 
-	// Check if the game exists
+	// check if the game exists
 	game, err := s.FindGame(gameID)
 	if err != nil {
 		http.Error(w, "Failed to add player to game", http.StatusInternalServerError)
 	}
 
-	// Decode the JSON body to get player information
+	// decode the JSON body to get player information
 	newPlayer := states.NewPlayerState()
 
-	// Add the player to the game
+	// add the player to the game
 	game.UpdatePlayer(newPlayer)
 
-	// Respond with the updated game state
+	// respond with the updated game state
 	fmt.Fprintf(w, "In game %s added player: %s\n", game.ID, newPlayer.ID)
 }
 
@@ -149,6 +161,7 @@ func (s *ServerData) readerws(conn *websocket.Conn) {
 			return
 		}
 
+		// add to the number of requests that have been processed
 		if len(msgBody) > 0 {
 			s.Info.CountRequests()
 		}
@@ -178,11 +191,24 @@ func parsews(msgType int, msgBody []byte) (string, error) {
 	switch msgType {
 	case websocket.TextMessage:
 		return string(msgBody), nil
-	//case websocket.BinaryMessage: // todo: implement
+	//case websocket.BinaryMessage: // todo: implement?
 	default:
 		return "", fmt.Errorf("unsupported message type: %d", msgType)
 	}
 }
 func processws(msgBody string) string {
+
+	// deserialize the message
+
+	// if it's a player update, just rebroadcast the same message but to all connected clients
+
+	// if it's a ball update, check whether it is a valid hit or something else happened to the ball already
+
+	// check for any hard-syncing events that need to be broadcasted, e.g.
+	// * ending a rally
+	// * ending the game
+	// if any of these events occur, it is important that all connected clients be notified and synced up with the current state of the game
+
+	// send a verification message back to the client who delivered this message
 	return fmt.Sprintf("Processed message: %s", msgBody)
 }

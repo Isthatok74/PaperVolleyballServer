@@ -12,16 +12,12 @@ import (
 	"pv-server/data"
 )
 
-var (
-	serverData data.ServerData // storage for the server data
-)
+// global variable to store the server data throughout lifetime of server
+var serverData = data.NewServerData()
 
 func main() {
 
 	fmt.Println("Starting server...")
-
-	fmt.Println("Initiating server data...")
-	serverData := data.NewServerData()
 
 	fmt.Println("Starting rate limiter...")
 	go resetRateLimit()

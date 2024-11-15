@@ -45,7 +45,7 @@ func setupRoutesHTTP() {
 	// todo: remove obsolete
 	http.Handle("/create", rateLimitHandler(http.HandlerFunc(serverData.HandleCreate)))
 	http.Handle("/addplayer", rateLimitHandler(http.HandlerFunc(serverData.HandleAddPlayer)))
-	http.Handle("/message", rateLimitHandler(http.HandlerFunc(serverData.HandlePostMessage)))
+	http.Handle("/post", rateLimitHandler(http.HandlerFunc(serverData.HandlePost)))
 }
 
 func setupRoutesWS() {
@@ -60,7 +60,7 @@ func startServer() {
 
 	// start the server
 	go func() {
-		fmt.Println("Starting server on port" + port + "...")
+		fmt.Println("Starting server on port " + port + "...")
 		if err := http.ListenAndServe(address, nil); err != nil {
 			fmt.Printf("Failed to start server: %v\n", err)
 		}

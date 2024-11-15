@@ -6,7 +6,7 @@ type WrappedMessage struct {
 	GameID string `json:"GameID"`
 }
 
-func (w *WrappedMessage) HandleWrappedMessage(s *ServerData) {
+func (w *WrappedMessage) HandlePost(s *ServerData) {
 
 	// todo: construct the appropriate state object based on `Type`
 

@@ -15,6 +15,7 @@ import (
 type ServerData struct {
 	Info  st.ServerState
 	Games map[string]st.GameState
+	//Clients map[string]*websocket.Conn
 }
 
 // Constructor function to initialize ServerData
@@ -22,6 +23,7 @@ func NewServerData() *ServerData {
 	serverData := &ServerData{
 		Info:  *st.NewServerState(),          // Initialize Info field with zero value
 		Games: make(map[string]st.GameState), // Initialize Games as an empty map
+		//Clients: make(map[string]*websocket.Conn), // Initialize Clients as an empty map
 	}
 	return serverData
 }
@@ -83,8 +85,8 @@ func (s *ServerData) HandleAddPlayer(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "In game %s added player: %s\n", game.ID, newPlayer.ID)
 }
 
-// Handle POST request for the /message endpoint
-func (s *ServerData) HandlePostMessage(w http.ResponseWriter, r *http.Request) {
+// Handle POST request for the /post endpoint
+func (s *ServerData) HandlePost(w http.ResponseWriter, r *http.Request) {
 
 	s.Info.CountRequests()
 
@@ -102,7 +104,7 @@ func (s *ServerData) HandlePostMessage(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to decode JSON", http.StatusBadRequest)
 		return
 	}
-	wm.HandleWrappedMessage(s)
+	wm.HandlePost(s)
 
 	// Process the message (for now, we just print it to the console)
 	fmt.Printf("Received message: %+v\n", wm)
@@ -126,16 +128,20 @@ func (s *ServerData) HandleWS(w http.ResponseWriter, r *http.Request) {
 	s.Info.CountRequests()
 
 	// upgrade the connection
-	ws, err := upgrader.Upgrade(w, r, nil)
+	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println(err)
 	}
 	log.Printf("Client Successfully Connected: %s", r.RemoteAddr)
 
+	// generate a guid and assign it to the client
+	//guid := uuid.New().String()
+	//s.Clients[guid] = conn
+
 	// start reading
-	reader(ws)
+	s.reader(conn)
 }
-func reader(conn *websocket.Conn) {
+func (s *ServerData) reader(conn *websocket.Conn) {
 	for {
 
 		// receive a message when it arrives
@@ -143,6 +149,10 @@ func reader(conn *websocket.Conn) {
 		if err != nil {
 			log.Println(err)
 			return
+		}
+
+		if len(msgBody) > 0 {
+			s.Info.CountRequests()
 		}
 
 		// parse it

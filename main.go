@@ -34,17 +34,17 @@ func main() {
 }
 
 func setupRoutesHTTP() {
-	http.Handle("/ping", rateLimitHandler(http.HandlerFunc(serverData.HandlePing)))
-	http.Handle("/status", rateLimitHandler(http.HandlerFunc(serverData.HandleStatus)))
+	http.Handle("/ping", rateLimitHandler(http.HandlerFunc(serverData.HandlePing), &(serverData.Info)))
+	http.Handle("/status", rateLimitHandler(http.HandlerFunc(serverData.HandleStatus), &(serverData.Info)))
 
 	// todo: remove obsolete
-	http.Handle("/create", rateLimitHandler(http.HandlerFunc(serverData.HandleCreate)))
-	http.Handle("/addplayer", rateLimitHandler(http.HandlerFunc(serverData.HandleAddPlayer)))
-	http.Handle("/post", rateLimitHandler(http.HandlerFunc(serverData.HandlePost)))
+	http.Handle("/create", rateLimitHandler(http.HandlerFunc(serverData.HandleCreate), &(serverData.Info)))
+	http.Handle("/addplayer", rateLimitHandler(http.HandlerFunc(serverData.HandleAddPlayer), &(serverData.Info)))
+	http.Handle("/post", rateLimitHandler(http.HandlerFunc(serverData.HandlePost), &(serverData.Info)))
 }
 
 func setupRoutesWS() {
-	http.Handle("/ws", rateLimitHandler(http.HandlerFunc(serverData.HandleWS)))
+	http.Handle("/ws", rateLimitHandler(http.HandlerFunc(serverData.HandleWS), &(serverData.Info)))
 }
 
 func startServer() {

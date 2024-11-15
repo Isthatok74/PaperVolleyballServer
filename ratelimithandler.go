@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http"
+	"pv-server/data/states"
 	"sync"
 	"time"
 )
@@ -19,8 +20,10 @@ type clientRate struct {
 }
 
 // prevent any single client from sending too many requests in close succession
-func rateLimitHandler(next http.Handler) http.Handler {
+func rateLimitHandler(next http.Handler, s *states.ServerState) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		s.CountRequests()
 
 		// Get the client's IP address
 		clientIP := r.RemoteAddr

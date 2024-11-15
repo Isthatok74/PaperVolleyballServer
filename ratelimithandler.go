@@ -50,7 +50,6 @@ func rateLimitHandler(next http.Handler) http.Handler {
 }
 
 func resetRateLimit() {
-	// Periodically reset the rate limits every minute (optional, since sync.Map handles it)
 	for {
 		time.Sleep(limitWindow)
 		rateLimitMap.Range(func(key, value interface{}) bool {

@@ -38,7 +38,6 @@ func main() {
 }
 
 func setupRoutesHTTP() {
-	http.Handle("/", rateLimitHandler(http.DefaultServeMux))
 	http.Handle("/ping", rateLimitHandler(http.HandlerFunc(serverData.HandlePing)))
 	http.Handle("/status", rateLimitHandler(http.HandlerFunc(serverData.HandleStatus)))
 

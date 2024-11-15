@@ -10,7 +10,6 @@ import (
 	"pv-server/util"
 	"sync"
 
-	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 )
 
@@ -52,16 +51,7 @@ func (s *ServerData) HandleStatus(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Server start time: %s \n", s.Info.StartTime)
 	fmt.Fprintf(w, "Number of requests processed: %d \n", s.Info.ReqCount)
 	fmt.Fprintf(w, "Number of active games: %d \n", len(s.Games))
-	fmt.Fprintf(w, "Number of clients connected: %d\n", getSyncMapSize(&(s.Clients)))
-}
-
-func getSyncMapSize(m *sync.Map) int {
-	count := 0
-	m.Range(func(key, value interface{}) bool {
-		count++
-		return true // Continue iterating
-	})
-	return count
+	fmt.Fprintf(w, "Number of clients connected: %d\n", util.GetSyncMapSize(&(s.Clients)))
 }
 
 func (s *ServerData) HandleCreate(w http.ResponseWriter, r *http.Request) {
@@ -145,15 +135,18 @@ func (s *ServerData) HandleWS(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Printf("Client Successfully Connected: %s", r.RemoteAddr)
 
-	// generate a guid and assign it to the client
-	guid := uuid.New().String()
+	// store the connection to the map
+	clientAddr := conn.RemoteAddr().String()
+	s.Clients.LoadOrStore(clientAddr, conn)
 
-	s.Clients.LoadOrStore(guid, conn)
+	// send a verification message to the client
+	verifMsg := fmt.Sprintf("Server registry of client %s successful!", clientAddr)
+	sendws(conn, websocket.TextMessage, []byte(verifMsg))
 
 	// start reading
-	s.reader(conn)
+	s.readerws(conn)
 }
-func (s *ServerData) reader(conn *websocket.Conn) {
+func (s *ServerData) readerws(conn *websocket.Conn) {
 	for {
 
 		// receive a message when it arrives
@@ -168,7 +161,7 @@ func (s *ServerData) reader(conn *websocket.Conn) {
 		}
 
 		// parse it
-		msg, err := parseWebSocketMessage(msgType, msgBody)
+		msg, err := parsews(msgType, msgBody)
 		if err != nil {
 			log.Println(err)
 			return
@@ -176,19 +169,19 @@ func (s *ServerData) reader(conn *websocket.Conn) {
 		log.Printf("Message received from %s: %s", conn.RemoteAddr(), msg)
 
 		// process it
-		res := processMessage(msg)
+		res := processws(msg)
 
 		// send a result message
-		sender(conn, websocket.TextMessage, []byte(res))
+		sendws(conn, websocket.TextMessage, []byte(res))
 	}
 }
-func sender(conn *websocket.Conn, messageType int, msgBody []byte) {
+func sendws(conn *websocket.Conn, messageType int, msgBody []byte) {
 	if err := conn.WriteMessage(messageType, msgBody); err != nil {
 		log.Println(err)
 		return
 	}
 }
-func parseWebSocketMessage(msgType int, msgBody []byte) (string, error) {
+func parsews(msgType int, msgBody []byte) (string, error) {
 	switch msgType {
 	case websocket.TextMessage:
 		return string(msgBody), nil
@@ -197,6 +190,6 @@ func parseWebSocketMessage(msgType int, msgBody []byte) (string, error) {
 		return "", fmt.Errorf("unsupported message type: %d", msgType)
 	}
 }
-func processMessage(msgBody string) string {
+func processws(msgBody string) string {
 	return fmt.Sprintf("Processed message: %s", msgBody)
 }

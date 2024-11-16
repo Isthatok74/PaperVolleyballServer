@@ -19,6 +19,11 @@ var upgrader = websocket.Upgrader{
 	CheckOrigin:     func(r *http.Request) bool { return true }, // allow any connections to this endpoint regardless of what it is
 }
 
+// define some tags for requests that may be received from clients
+const JsonTagPingRequest string = "ping"
+const JsonTagCreateRequest string = "create"
+const JsonTagAddPlayerRequest string = "addplayer"
+
 func (s *ServerData) HandleWS(w http.ResponseWriter, r *http.Request) {
 
 	// upgrade the connection
@@ -63,7 +68,7 @@ func (s *ServerData) readerws(conn *websocket.Conn) {
 		log.Printf("Message received from %s: %s", conn.RemoteAddr(), msg)
 
 		// process it
-		res, err := s.processws(msg)
+		res, err := s.processws(conn, msg)
 		if err != nil {
 			log.Println(err)
 			return
@@ -90,7 +95,7 @@ func parsews(msgType int, msgBody []byte) ([]byte, error) {
 }
 
 // process an message containing information about an in-game event
-func (s *ServerData) processws(msgBody []byte) (string, error) {
+func (s *ServerData) processws(conn *websocket.Conn, msgBody []byte) (string, error) {
 
 	// deserialize the message
 	var data map[string]interface{}
@@ -107,7 +112,7 @@ func (s *ServerData) processws(msgBody []byte) (string, error) {
 	for key := range data {
 		val := data[key].(string)
 		if strings.Contains(strings.ToLower(key), jsonTagType) {
-			typeVal = val
+			typeVal = strings.ToLower(val)
 		} else if strings.Contains(strings.ToLower(key), states.JsonTagGame) {
 			gameVal = val
 		}
@@ -126,13 +131,26 @@ func (s *ServerData) processws(msgBody []byte) (string, error) {
 	}
 
 	// read the wrapped data
-	if strings.Contains(strings.ToLower(typeVal), states.JsonTagPlayer) {
+	if strings.Contains(typeVal, JsonTagPingRequest) {
+
+		// ping request
+		sendws(conn, websocket.TextMessage, msgBody)
+
+	} else if strings.Contains(typeVal, JsonTagCreateRequest) {
+
+		// create game request
+
+	} else if strings.Contains(typeVal, JsonTagAddPlayerRequest) {
+
+		// add player request
+	}
+	if strings.Contains(typeVal, states.JsonTagPlayer) {
 
 		// player update, just rebroadcast the same message but to all connected clients
 		log.Println("Processing player event")
 		s.broadcastws(msgBody, game)
 
-	} else if strings.Contains(strings.ToLower(typeVal), states.JsonTagBall) {
+	} else if strings.Contains(typeVal, states.JsonTagBall) {
 
 		// ball update, check whether it is a valid hit or something else happened to the ball already
 		log.Println("Processing ball event")
@@ -156,5 +174,6 @@ func (s *ServerData) broadcastws(msgBody []byte, game *states.GameState) {
 	// for each player connected to the game, send the message to the corresponding client
 
 	// todo: we would need to store the player's ip in the playerState, we would need to resolve the discrepancy between their http ip and their ws ip
+	// consider migrating ping, create and add to ws
 
 }

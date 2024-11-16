@@ -63,7 +63,7 @@ func (s *ServerData) readerws(conn *websocket.Conn) {
 		log.Printf("Message received from %s: %s", conn.RemoteAddr(), msg)
 
 		// process it
-		res, err := processws(msg)
+		res, err := s.processws(msg)
 		if err != nil {
 			log.Println(err)
 			return
@@ -88,7 +88,9 @@ func parsews(msgType int, msgBody []byte) ([]byte, error) {
 		return nil, fmt.Errorf("unsupported message type: %d", msgType)
 	}
 }
-func processws(msgBody []byte) (string, error) {
+
+// process an message containing information about an in-game event
+func (s *ServerData) processws(msgBody []byte) (string, error) {
 
 	// deserialize the message
 	var data map[string]interface{}
@@ -117,11 +119,18 @@ func processws(msgBody []byte) (string, error) {
 		return "", fmt.Errorf("error finding game identifier key in json string; unidentifiable message")
 	}
 
+	// verify that the game exists
+	game, err := s.FindGame(gameVal)
+	if err != nil {
+		return "", fmt.Errorf("could not find game id in registry: %s", gameVal)
+	}
+
 	// read the wrapped data
 	if strings.Contains(strings.ToLower(typeVal), states.JsonTagPlayer) {
 
 		// player update, just rebroadcast the same message but to all connected clients
 		log.Println("Processing player event")
+		s.broadcastws(msgBody, game)
 
 	} else if strings.Contains(strings.ToLower(typeVal), states.JsonTagBall) {
 
@@ -139,4 +148,13 @@ func processws(msgBody []byte) (string, error) {
 
 	// send a verification message back to the client who delivered this message
 	return fmt.Sprintf("Processed message: %s", msgBody), nil
+}
+
+// send a broadcast message to all clients connected to the specified game
+func (s *ServerData) broadcastws(msgBody []byte, game *states.GameState) {
+
+	// for each player connected to the game, send the message to the corresponding client
+
+	// todo: we would need to store the player's ip in the playerState, we would need to resolve the discrepancy between their http ip and their ws ip
+
 }

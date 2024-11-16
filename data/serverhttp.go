@@ -3,6 +3,7 @@ package data
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"pv-server/data/states"
 	"pv-server/util"
@@ -28,7 +29,9 @@ func (s *ServerData) HandleStatus(w http.ResponseWriter, r *http.Request) {
 func (s *ServerData) HandleCreate(w http.ResponseWriter, r *http.Request) {
 	gameState := *states.NewGameState()
 	s.Games.LoadOrStore(gameState.ID, gameState)
-	fmt.Fprintf(w, "Created game with ID: %s \n", gameState.ID)
+	retMsg := fmt.Sprintf("Created game with ID: %s", gameState.ID)
+	fmt.Fprintln(w, retMsg)
+	log.Println(retMsg)
 }
 
 // handle registering player to an existing game
@@ -40,7 +43,8 @@ func (s *ServerData) HandleAddPlayer(w http.ResponseWriter, r *http.Request) {
 	// check if the game exists
 	game, err := s.FindGame(gameID)
 	if err != nil {
-		http.Error(w, "Failed to add player to game", http.StatusInternalServerError)
+		log.Print(err.Error())
+		http.Error(w, "Failed to add player to game: ", http.StatusInternalServerError)
 	}
 
 	// decode the JSON body to get player information
@@ -50,7 +54,9 @@ func (s *ServerData) HandleAddPlayer(w http.ResponseWriter, r *http.Request) {
 	game.UpdatePlayer(newPlayer)
 
 	// respond with the updated game state
-	fmt.Fprintf(w, "In game %s added player: %s\n", game.ID, newPlayer.ID)
+	retMsg := fmt.Sprintf("Added player with ID %s to game with ID: %s", newPlayer.ID, game.ID)
+	fmt.Fprintln(w, retMsg)
+	log.Println(retMsg)
 }
 
 // Handle POST request for the /post endpoint

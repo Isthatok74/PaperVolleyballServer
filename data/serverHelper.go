@@ -2,28 +2,10 @@ package data
 
 import (
 	"fmt"
-	"net/http"
 	"pv-server/data/states"
 )
 
 // Contains helper functions related to managing server data and requests
-
-// look through the connection map to verify that this client is connected on websocket
-func (s *ServerData) verifyConnection(w http.ResponseWriter, r *http.Request) {
-	foundClientAddr := false
-	s.Clients.Range(func(k, v interface{}) bool {
-		if k == r.RemoteAddr {
-			foundClientAddr = true
-			return false
-		}
-		return true
-	})
-	if !foundClientAddr {
-		http.Error(w, fmt.Sprintf("Failed to find connection: %s", r.RemoteAddr), http.StatusUnauthorized)
-	} else {
-		fmt.Println(w, fmt.Sprintf("Verified connection with %s", r.RemoteAddr))
-	}
-}
 
 // searches for a game by its ID and returns the GameState if found, or nil along with an error if not.
 func (s *ServerData) FindGame(id string) (*states.GameState, error) {

@@ -1,9 +1,12 @@
 package data
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
+	"pv-server/data/states"
+	"strings"
 
 	"github.com/gorilla/websocket"
 )
@@ -87,47 +90,47 @@ func parsews(msgType int, msgBody []byte) ([]byte, error) {
 }
 func processws(msgBody []byte) (string, error) {
 
-	/*
-		// deserialize the message
-		var data map[string]interface{}
-		err := json.Unmarshal(msgBody, &data)
-		if err != nil {
-			fmt.Println("Error parsing incoming message: ", err)
-			return "", err
+	// deserialize the message
+	var data map[string]interface{}
+	err := json.Unmarshal(msgBody, &data)
+	if err != nil {
+		fmt.Println("Error parsing incoming message: ", err)
+		return "", err
+	}
+
+	// search for the "type" and "game" key-value pairs to determine what type of data was pased in, which game it corresponds to
+	const jsonTagType string = "type"
+	typeVal := ""
+	gameVal := ""
+	for key := range data {
+		val := data[key].(string)
+		if strings.Contains(strings.ToLower(key), jsonTagType) {
+			typeVal = val
+		} else if strings.Contains(strings.ToLower(key), states.JsonTagGame) {
+			gameVal = val
 		}
+	}
+	if len(typeVal) == 0 {
+		return "", fmt.Errorf("error finding type key in json string; unidentifiable message")
+	}
+	if len(gameVal) == 0 {
+		return "", fmt.Errorf("error finding game identifier key in json string; unidentifiable message")
+	}
 
-		// search for the "type" and "game" key-value pairs to determine what type of data was pased in, which game it corresponds to
-		const jsonTagType string = "type"
-		typeVal := ""
-		gameVal := ""
-		for key := range data {
-			val := data[key].(string)
-			if strings.Contains(strings.ToLower(key), jsonTagType) {
-				typeVal = val
-			} else if strings.Contains(strings.ToLower(key), states.JsonTagGame) {
-				gameVal = val
-			}
-		}
-		if len(typeVal) == 0 {
-			return "", fmt.Errorf("error finding type key in json string; unidentifiable message")
-		}
-		if len(gameVal) == 0 {
-			return "", fmt.Errorf("error finding game identifier key in json string; unidentifiable message")
-		}
+	// read the wrapped data
+	if strings.Contains(strings.ToLower(typeVal), states.JsonTagPlayer) {
 
-		// read the wrapped data
-		if strings.Contains(strings.ToLower(typeVal), states.JsonTagPlayer) {
+		// player update, just rebroadcast the same message but to all connected clients
+		log.Println("Processing player event")
 
-			// player update, just rebroadcast the same message but to all connected clients
+	} else if strings.Contains(strings.ToLower(typeVal), states.JsonTagBall) {
 
-		} else if strings.Contains(strings.ToLower(typeVal), states.JsonTagBall) {
+		// ball update, check whether it is a valid hit or something else happened to the ball already
+		log.Println("Processing ball event")
 
-			// ball update, check whether it is a valid hit or something else happened to the ball already
-
-		} else {
-			return "", fmt.Errorf("unrecognized json tag in received data; unidentifiable message")
-		}
-	*/
+	} else {
+		return "", fmt.Errorf("unrecognized json tag in received data; unidentifiable message")
+	}
 
 	// check for any hard-syncing events that need to be broadcasted, e.g.
 	// * ending a rally

@@ -34,9 +34,6 @@ func (s *ServerData) HandleCreate(w http.ResponseWriter, r *http.Request) {
 // handle registering player to an existing game
 func (s *ServerData) HandleAddPlayer(w http.ResponseWriter, r *http.Request) {
 
-	// look through the connection map to verify that this client is connected on websocket
-	//s.verifyConnection(w, r)
-
 	// get the game GUID from the URL path (assuming it's a part of the URL like /games/{guid}/addplayer)
 	gameID := r.URL.Query().Get("gameID") // Example URL: /addplayer?gameID={guid}
 

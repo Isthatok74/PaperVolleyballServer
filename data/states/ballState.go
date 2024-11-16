@@ -12,5 +12,3 @@ type BallState struct {
 	TouchedBy  string     `json:"TouchedBy"`
 	TouchCount int        `json:"TouchCount"`
 }
-
-const JsonTagBall string = "ball"

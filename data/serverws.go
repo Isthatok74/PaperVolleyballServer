@@ -19,11 +19,6 @@ var upgrader = websocket.Upgrader{
 	CheckOrigin:     func(r *http.Request) bool { return true }, // allow any connections to this endpoint regardless of what it is
 }
 
-// define some tags for requests that may be received from clients
-const JsonTagPingRequest string = "ping"
-const JsonTagCreateRequest string = "create"
-const JsonTagAddPlayerRequest string = "addplayer"
-
 func (s *ServerData) HandleWS(w http.ResponseWriter, r *http.Request) {
 
 	// upgrade the connection
@@ -144,13 +139,13 @@ func (s *ServerData) processws(conn *websocket.Conn, msgBody []byte) (string, er
 
 		// add player request
 	}
-	if strings.Contains(typeVal, states.JsonTagPlayer) {
+	if strings.Contains(typeVal, JsonTagPlayer) {
 
 		// player update, just rebroadcast the same message but to all connected clients
 		log.Println("Processing player event")
 		s.broadcastws(msgBody, game)
 
-	} else if strings.Contains(typeVal, states.JsonTagBall) {
+	} else if strings.Contains(typeVal, JsonTagBall) {
 
 		// ball update, check whether it is a valid hit or something else happened to the ball already
 		log.Println("Processing ball event")

@@ -11,12 +11,6 @@ import (
 
 // Handles the http traffic portion of the server
 
-// handle the ping route on http - simply returns the current server time
-func (s *ServerData) HandlePing(w http.ResponseWriter, r *http.Request) {
-	currentTime := util.CurrentTimeUTC().Format("15:04:05.000")
-	fmt.Fprintf(w, "%s", currentTime)
-}
-
 // handle the status route on http - returns some server metrics
 func (s *ServerData) HandleStatus(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Server start time: %s \n", s.Info.StartTime)

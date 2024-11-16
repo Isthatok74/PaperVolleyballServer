@@ -63,7 +63,7 @@ func (s *ServerData) readerws(conn *websocket.Conn) {
 		log.Printf("Message received from %s: %s", conn.RemoteAddr(), msg)
 
 		// process it
-		res, err := s.processws(conn, msg)
+		res, err := s.processws(msg)
 		if err != nil {
 			log.Println(err)
 			return
@@ -90,7 +90,7 @@ func parsews(msgType int, msgBody []byte) ([]byte, error) {
 }
 
 // process an message containing information about an in-game event
-func (s *ServerData) processws(conn *websocket.Conn, msgBody []byte) (string, error) {
+func (s *ServerData) processws(msgBody []byte) (string, error) {
 
 	// deserialize the message
 	var data map[string]interface{}
@@ -100,20 +100,41 @@ func (s *ServerData) processws(conn *websocket.Conn, msgBody []byte) (string, er
 		return "", err
 	}
 
-	// search for the "type" and "game" key-value pairs to determine what type of data was pased in, which game it corresponds to
+	// search for the "type" key-value pair to determine what type of data was pased in
 	const jsonTagType string = "type"
 	typeVal := ""
-	gameVal := ""
 	for key := range data {
 		val := data[key].(string)
 		if strings.Contains(strings.ToLower(key), jsonTagType) {
 			typeVal = strings.ToLower(val)
-		} else if strings.Contains(strings.ToLower(key), states.JsonTagGame) {
-			gameVal = val
 		}
 	}
 	if len(typeVal) == 0 {
 		return "", fmt.Errorf("error finding type key in json string; unidentifiable message")
+	}
+
+	// read the wrapped data
+	if strings.Contains(typeVal, JsonTagPingRequest) {
+
+		// ping request
+		return string(msgBody), nil
+
+	} else if strings.Contains(typeVal, JsonTagCreateRequest) {
+
+		// create game request
+
+	} else if strings.Contains(typeVal, JsonTagAddPlayerRequest) {
+
+		// add player request
+	}
+
+	// attempt to find the gameID
+	gameVal := ""
+	for key := range data {
+		val := data[key].(string)
+		if strings.Contains(strings.ToLower(key), states.JsonTagGame) {
+			gameVal = val
+		}
 	}
 	if len(gameVal) == 0 {
 		return "", fmt.Errorf("error finding game identifier key in json string; unidentifiable message")
@@ -125,20 +146,6 @@ func (s *ServerData) processws(conn *websocket.Conn, msgBody []byte) (string, er
 		return "", fmt.Errorf("could not find game id in registry: %s", gameVal)
 	}
 
-	// read the wrapped data
-	if strings.Contains(typeVal, JsonTagPingRequest) {
-
-		// ping request
-		sendws(conn, websocket.TextMessage, msgBody)
-
-	} else if strings.Contains(typeVal, JsonTagCreateRequest) {
-
-		// create game request
-
-	} else if strings.Contains(typeVal, JsonTagAddPlayerRequest) {
-
-		// add player request
-	}
 	if strings.Contains(typeVal, JsonTagPlayer) {
 
 		// player update, just rebroadcast the same message but to all connected clients

@@ -37,7 +37,6 @@ func main() {
 // all of the HTTP routes are defined here.
 // * HTTP requests are used for requests that can be made from anywhere (e.g. a web browser). They typically involve a client simply sending a request, processing the request on the server, and then sending back a message to the client.
 func setupRoutesHTTP() {
-	http.Handle("/ping", rateLimitHandler(http.HandlerFunc(serverData.HandlePing), &(serverData.Info)))
 	http.Handle("/status", rateLimitHandler(http.HandlerFunc(serverData.HandleStatus), &(serverData.Info)))
 	http.Handle("/create", rateLimitHandler(http.HandlerFunc(serverData.HandleCreate), &(serverData.Info)))
 	http.Handle("/addplayer", rateLimitHandler(http.HandlerFunc(serverData.HandleAddPlayer), &(serverData.Info)))

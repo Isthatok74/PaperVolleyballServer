@@ -19,3 +19,5 @@ func NewPlayerState() *PlayerState {
 	newPlayer.GetGUID()
 	return &newPlayer
 }
+
+const JsonTagPlayer string = "player"

@@ -74,8 +74,8 @@ func (s *ServerData) readerws(conn *websocket.Conn) error {
 		// process it
 		res, err := s.processws(msg)
 		if err != nil {
+			break
 		}
-		break
 
 		// send a result message
 		s.sendws(conn, websocket.TextMessage, res)

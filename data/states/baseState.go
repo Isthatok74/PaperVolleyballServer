@@ -1,15 +1,12 @@
 package states
 
 import (
-	"pv-server/data/structures"
-
 	"github.com/google/uuid"
 )
 
 // a base class for state containers. all derivates should have an ID string
 type BaseState struct {
-	structures.Serializable
-	ID string
+	ID string `json:"ID"`
 }
 
 // a method that should be called to generate a guid for this object

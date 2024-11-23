@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"pv-server/data/requests"
 	"pv-server/data/states"
+	"pv-server/data/structures"
 	"strings"
 
 	"github.com/gorilla/websocket"
@@ -70,7 +72,7 @@ func (s *ServerData) readerws(conn *websocket.Conn) {
 		}
 
 		// send a result message
-		sendws(conn, websocket.TextMessage, []byte(res))
+		sendws(conn, websocket.TextMessage, res)
 	}
 }
 func sendws(conn *websocket.Conn, messageType int, msgBody []byte) {
@@ -89,15 +91,15 @@ func parsews(msgType int, msgBody []byte) ([]byte, error) {
 	}
 }
 
-// process an message containing information about an in-game event
-func (s *ServerData) processws(msgBody []byte) (string, error) {
+// process an message containing information about an in-game event, and returns a message to send back
+func (s *ServerData) processws(msgBody []byte) ([]byte, error) {
 
 	// deserialize the message
 	var data map[string]interface{}
 	err := json.Unmarshal(msgBody, &data)
 	if err != nil {
 		fmt.Println("Error parsing incoming message: ", err)
-		return "", err
+		return []byte{}, err
 	}
 
 	// search for the "type" key-value pair to determine what type of data was pased in
@@ -110,43 +112,46 @@ func (s *ServerData) processws(msgBody []byte) (string, error) {
 		}
 	}
 	if len(typeVal) == 0 {
-		return "", fmt.Errorf("error finding type key in json string; unidentifiable message")
+		return []byte{}, fmt.Errorf("error finding type key in json string; unidentifiable message")
 	}
 
 	// read the wrapped data
 	if strings.Contains(typeVal, JsonTagPingRequest) {
 
-		// ping request
-		return string(msgBody), nil
+		// handle ping request
+		return handlepingws(msgBody)
 
 	} else if strings.Contains(typeVal, JsonTagCreateRequest) {
 
 		// create game request
-
-	} else if strings.Contains(typeVal, JsonTagAddPlayerRequest) {
-
-		// add player request
+		return s.handlecreatews()
 	}
 
 	// attempt to find the gameID
 	gameVal := ""
 	for key := range data {
 		val := data[key].(string)
-		if strings.Contains(strings.ToLower(key), states.JsonTagGame) {
+		if strings.Contains(strings.ToLower(key), JsonTagGame) {
 			gameVal = val
 		}
 	}
 	if len(gameVal) == 0 {
-		return "", fmt.Errorf("error finding game identifier key in json string; unidentifiable message")
+		return []byte{}, fmt.Errorf("error finding game identifier key in json string; unidentifiable message")
 	}
 
 	// verify that the game exists
 	game, err := s.FindGame(gameVal)
 	if err != nil {
-		return "", fmt.Errorf("could not find game id in registry: %s", gameVal)
+		return []byte{}, fmt.Errorf("could not find game id in registry: %s", gameVal)
 	}
 
-	if strings.Contains(typeVal, JsonTagPlayer) {
+	// figure out what kind of game status update the message contains
+	if strings.Contains(typeVal, JsonTagAddPlayerRequest) {
+
+		// add player request
+		return handleaddplayerws(game)
+
+	} else if strings.Contains(typeVal, JsonTagPlayer) {
 
 		// player update, just rebroadcast the same message but to all connected clients
 		log.Println("Processing player event")
@@ -158,7 +163,7 @@ func (s *ServerData) processws(msgBody []byte) (string, error) {
 		log.Println("Processing ball event")
 
 	} else {
-		return "", fmt.Errorf("unrecognized json tag in received data; unidentifiable message")
+		return []byte{}, fmt.Errorf("unrecognized json tag in received data; unidentifiable message")
 	}
 
 	// check for any hard-syncing events that need to be broadcasted, e.g.
@@ -167,7 +172,52 @@ func (s *ServerData) processws(msgBody []byte) (string, error) {
 	// if any of these events occur, it is important that all connected clients be notified and synced up with the current state of the game
 
 	// send a verification message back to the client who delivered this message
-	return fmt.Sprintf("Processed message: %s", msgBody), nil
+	return []byte(fmt.Sprintf("Processed message: %s", msgBody)), nil
+}
+
+// process a ping request
+func handlepingws(msgBody []byte) ([]byte, error) {
+
+	// deserialize the message
+	var rq requests.PingRequest
+	structures.FromWrappedJSON(&rq, msgBody)
+
+	// re-serialize the message
+	msg, err := structures.ToWrappedJSON(rq, "")
+	if err != nil {
+		return []byte{}, err
+	}
+	return msg, nil
+}
+
+// process a game creation request
+func (s *ServerData) handlecreatews() ([]byte, error) {
+
+	// create a game in the data
+	gameState := *states.NewGameState()
+	s.Games.LoadOrStore(gameState.ID, gameState)
+
+	// return a message
+	retMsg := fmt.Sprintf("Created game with ID: %s", gameState.ID) // todo: change into a packageable entity
+	log.Println(retMsg)
+
+	return []byte(retMsg), nil
+}
+
+// process a player add request
+func handleaddplayerws(game *states.GameState) ([]byte, error) {
+
+	// decode the JSON body to get player information
+	newPlayer := states.NewPlayerState()
+
+	// add the player to the game
+	game.UpdatePlayer(newPlayer)
+
+	// respond with the updated game state
+	retMsg := fmt.Sprintf("Added player with ID %s to game with ID: %s", newPlayer.ID, game.ID) // todo: change into a packageable entity
+	log.Println(retMsg)
+
+	return []byte(retMsg), nil
 }
 
 // send a broadcast message to all clients connected to the specified game

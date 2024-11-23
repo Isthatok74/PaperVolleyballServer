@@ -7,8 +7,6 @@ type GameState struct {
 	Players map[string]PlayerState `json:"Players"`
 }
 
-const JsonTagGame string = "game"
-
 // initialize a new gameState object
 func NewGameState() *GameState {
 	gameState := &GameState{

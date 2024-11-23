@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"pv-server/data/states"
+	"pv-server/data/structures"
 	"pv-server/util"
 )
 
@@ -63,7 +64,7 @@ func (s *ServerData) HandlePost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Decode the JSON body into a Message struct
-	var wm WrappedMessage
+	var wm structures.WrappedMessage
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(&wm)
 	if err != nil {
@@ -73,7 +74,7 @@ func (s *ServerData) HandlePost(w http.ResponseWriter, r *http.Request) {
 
 	// Process the message (for now, we just print it to the console)
 	fmt.Printf("Message received: %s\n", wm.Data)
-	result := wm.HandlePost(s)
+	result := wm.Data
 
 	// Respond with a simple success message
 	response := map[string]string{

@@ -13,10 +13,10 @@ func TestSerializePingRequest(t *testing.T) {
 }
 
 func TestSerializePlayerRequest(t *testing.T) {
-	rq := PlayerRequest{
+	rq := AddPlayerRequest{
 		PlayerID: "anyString",
 	}
-	structures.CompareSerializeDeserialize(t, rq, func(rq PlayerRequest) string { return rq.PlayerID })
+	structures.CompareSerializeDeserialize(t, rq, func(rq AddPlayerRequest) string { return rq.PlayerID })
 }
 
 func TestSerializeCreateRequest(t *testing.T) {

@@ -39,16 +39,19 @@ func (s *ServerData) HandleWS(w http.ResponseWriter, r *http.Request) {
 	sendws(conn, websocket.TextMessage, []byte(verifMsg))
 
 	// start reading
-	s.readerws(conn)
+	err = s.readerws(conn)
+	if err != nil {
+		log.Println(err)
+	}
 }
-func (s *ServerData) readerws(conn *websocket.Conn) {
+func (s *ServerData) readerws(conn *websocket.Conn) error {
+	var err error
 	for {
 
 		// receive a message when it arrives
 		msgType, msgBody, err := conn.ReadMessage()
 		if err != nil {
-			log.Println(err)
-			return
+			break
 		}
 
 		// add to the number of requests that have been processed
@@ -59,21 +62,20 @@ func (s *ServerData) readerws(conn *websocket.Conn) {
 		// parse it
 		msg, err := parsews(msgType, msgBody)
 		if err != nil {
-			log.Println(err)
-			return
+			break
 		}
 		log.Printf("Message received from %s: %s", conn.RemoteAddr(), msg)
 
 		// process it
 		res, err := s.processws(msg)
 		if err != nil {
-			log.Println(err)
-			return
+			break
 		}
 
 		// send a result message
 		sendws(conn, websocket.TextMessage, res)
 	}
+	return err
 }
 func sendws(conn *websocket.Conn, messageType int, msgBody []byte) {
 	if err := conn.WriteMessage(messageType, msgBody); err != nil {
@@ -183,11 +185,7 @@ func handlepingws(msgBody []byte) ([]byte, error) {
 	structures.FromWrappedJSON(&rq, msgBody)
 
 	// re-serialize the message
-	msg, err := structures.ToWrappedJSON(rq, "")
-	if err != nil {
-		return []byte{}, err
-	}
-	return msg, nil
+	return structures.ToWrappedJSON(rq, "")
 }
 
 // process a game creation request
@@ -197,11 +195,11 @@ func (s *ServerData) handlecreatews() ([]byte, error) {
 	gameState := *states.NewGameState()
 	s.Games.LoadOrStore(gameState.ID, gameState)
 
-	// return a message
-	retMsg := fmt.Sprintf("Created game with ID: %s", gameState.ID) // todo: change into a packageable entity
-	log.Println(retMsg)
-
-	return []byte(retMsg), nil
+	// create message to send back, with the game ID
+	rq := requests.CreateRequest{
+		GameID: gameState.ID,
+	}
+	return structures.ToWrappedJSON(rq, gameState.ID)
 }
 
 // process a player add request
@@ -214,10 +212,10 @@ func handleaddplayerws(game *states.GameState) ([]byte, error) {
 	game.UpdatePlayer(newPlayer)
 
 	// respond with the updated game state
-	retMsg := fmt.Sprintf("Added player with ID %s to game with ID: %s", newPlayer.ID, game.ID) // todo: change into a packageable entity
-	log.Println(retMsg)
-
-	return []byte(retMsg), nil
+	rq := requests.AddPlayerRequest{
+		PlayerID: newPlayer.ID,
+	}
+	return structures.ToWrappedJSON(rq, rq.PlayerID)
 }
 
 // send a broadcast message to all clients connected to the specified game

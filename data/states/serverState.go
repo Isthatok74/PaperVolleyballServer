@@ -12,18 +12,22 @@ import (
 // ServerState holds the state of the server
 type ServerState struct {
 	BaseState
-	StartTime  string        // the timestamp on which the server was started
-	ReqCount   int           // the number of times requests have been processed
-	mu         sync.Mutex    // To safely increment the ping count in concurrent requests
-	ShutdownCh chan struct{} // basically a listener which shuts down the server once it gets tripped (via `close(ShutdownCh)`)
+	StartTime     string        // the timestamp on which the server was started
+	ReqCount      int           // the number of times requests have been processed
+	BytesReceived uint64        // the amount of data received since the server started
+	BytesSent     uint64        // the amount of data sent since the server started
+	mu            sync.Mutex    // To safely increment the ping count in concurrent requests
+	ShutdownCh    chan struct{} // basically a listener which shuts down the server once it gets tripped (via `close(ShutdownCh)`)
 }
 
 // initialize a new ServerState object and return its pointer
 func NewServerState() *ServerState {
 	serverState := &ServerState{
-		ShutdownCh: make(chan struct{}),
-		StartTime:  util.CurrentTimeUTC().Format(time.RFC3339),
-		ReqCount:   0,
+		ShutdownCh:    make(chan struct{}),
+		StartTime:     util.CurrentTimeUTC().Format(time.RFC3339),
+		ReqCount:      0,
+		BytesReceived: 0,
+		BytesSent:     0,
 	}
 	serverState.GetGUID()
 	return serverState
@@ -41,6 +45,20 @@ func (s *ServerState) CountRequests() {
 	if s.ReqCount > MaxRequests {
 		close(s.ShutdownCh) // Signal to shut down
 	}
+}
+
+// dynamically counts the bytes received at the server
+func (s *ServerState) CountBytesReceived(v uint64) {
+	s.mu.Lock()
+	s.BytesReceived += v
+	s.mu.Unlock()
+}
+
+// dynamically counts the bytes sent by the server
+func (s *ServerState) CountBytesSent(v uint64) {
+	s.mu.Lock()
+	s.BytesSent += v
+	s.mu.Unlock()
 }
 
 // define a constant number of requests to the server, past which the server will automatically shut down to mitigate further damages

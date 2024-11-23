@@ -38,7 +38,7 @@ func (s *ServerData) HandleWS(w http.ResponseWriter, r *http.Request) {
 
 	// send a verification message to the client
 	verifMsg := fmt.Sprintf("Server registry of client %s successful!", clientAddr)
-	sendws(conn, websocket.TextMessage, []byte(verifMsg))
+	s.sendws(conn, websocket.TextMessage, []byte(verifMsg))
 
 	// start reading from this client's connection
 	err = s.readerws(conn)
@@ -61,6 +61,7 @@ func (s *ServerData) readerws(conn *websocket.Conn) error {
 		// add to the number of requests that have been processed
 		if len(msgBody) > 0 {
 			s.Info.CountRequests()
+			s.Info.CountBytesReceived(uint64(overheadreceivews(msgBody) + len(msgBody)))
 		}
 
 		// parse it
@@ -77,17 +78,35 @@ func (s *ServerData) readerws(conn *websocket.Conn) error {
 		}
 
 		// send a result message
-		sendws(conn, websocket.TextMessage, res)
+		s.sendws(conn, websocket.TextMessage, res)
 	}
 	return err
 }
 
 // send a message to the specified websocket connection
-func sendws(conn *websocket.Conn, messageType int, msgBody []byte) {
+func (s *ServerData) sendws(conn *websocket.Conn, messageType int, msgBody []byte) {
+	s.Info.CountBytesSent(uint64(overheadsendws(msgBody) + len(msgBody)))
 	if err := conn.WriteMessage(messageType, msgBody); err != nil {
 		log.Println(err)
 		return
 	}
+}
+
+// returns the number of bytes of overhead bandwidth used to send a message via websockets
+func overheadsendws(msgBody []byte) int {
+	payloadSize := len(msgBody)
+	if payloadSize <= 125 {
+		return 2 // Header for small payloads
+	} else if payloadSize <= 65535 {
+		return 4 // Header for medium payloads
+	} else {
+		return 10 // Header for large payloads
+	}
+}
+
+// returns the number of bytes of overhead bandwidth used to receive a message via websockets
+func overheadreceivews(msgBody []byte) int {
+	return overheadsendws(msgBody) + 4
 }
 
 // parse a message received from a websocket connection

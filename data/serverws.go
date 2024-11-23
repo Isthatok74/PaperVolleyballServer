@@ -151,7 +151,7 @@ func (s *ServerData) processws(msgBody []byte) ([]byte, error) {
 	if strings.Contains(typeVal, JsonTagAddPlayerRequest) {
 
 		// add player request
-		return handleaddplayerws(game)
+		return handleaddplayerws(msgBody, game)
 
 	} else if strings.Contains(typeVal, JsonTagPlayer) {
 
@@ -192,18 +192,25 @@ func handlepingws(msgBody []byte) ([]byte, error) {
 func (s *ServerData) handlecreatews() ([]byte, error) {
 
 	// create a game in the data
-	gameState := *states.NewGameState()
-	s.Games.LoadOrStore(gameState.ID, gameState)
+	game := *states.NewGameState()
+	s.Games.LoadOrStore(game.ID, game)
 
 	// create message to send back, with the game ID
-	rq := requests.CreateRequest{
-		GameID: gameState.ID,
+	rq := requests.CreateGameRequest{
+		GameID: game.ID,
 	}
-	return structures.ToWrappedJSON(rq, gameState.ID)
+
+	msg, err := structures.ToWrappedJSON(rq, game.ID)
+	log.Printf("Attempting to send back message: %s", msg)
+	return msg, err
 }
 
 // process a player add request
-func handleaddplayerws(game *states.GameState) ([]byte, error) {
+func handleaddplayerws(msgBody []byte, game *states.GameState) ([]byte, error) {
+
+	// deserialize the message
+	var rq requests.AddPlayerRequest
+	structures.FromWrappedJSON(&rq, msgBody)
 
 	// decode the JSON body to get player information
 	newPlayer := states.NewPlayerState()
@@ -212,10 +219,11 @@ func handleaddplayerws(game *states.GameState) ([]byte, error) {
 	game.UpdatePlayer(newPlayer)
 
 	// respond with the updated game state
-	rq := requests.AddPlayerRequest{
-		PlayerID: newPlayer.ID,
+	retrq := requests.AddPlayerRequest{
+		ClientPlayerID: rq.ClientPlayerID,
+		ServerPlayerID: newPlayer.ID,
 	}
-	return structures.ToWrappedJSON(rq, rq.PlayerID)
+	return structures.ToWrappedJSON(retrq, game.ID)
 }
 
 // send a broadcast message to all clients connected to the specified game

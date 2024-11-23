@@ -1,6 +1,6 @@
 package requests
 
 // represents a game ball, along with all of its state variables
-type CreateRequest struct {
+type CreateGameRequest struct {
 	GameID string `json:"GameID"`
 }

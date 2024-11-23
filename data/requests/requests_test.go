@@ -2,6 +2,7 @@ package requests
 
 import (
 	"pv-server/data/structures"
+	"strconv"
 	"testing"
 )
 
@@ -14,14 +15,15 @@ func TestSerializePingRequest(t *testing.T) {
 
 func TestSerializePlayerRequest(t *testing.T) {
 	rq := AddPlayerRequest{
-		PlayerID: "anyString",
+		ClientPlayerID: 42,
+		ServerPlayerID: "anyString",
 	}
-	structures.CompareSerializeDeserialize(t, rq, func(rq AddPlayerRequest) string { return rq.PlayerID })
+	structures.CompareSerializeDeserialize(t, rq, func(rq AddPlayerRequest) string { return strconv.Itoa(rq.ClientPlayerID) + rq.ServerPlayerID })
 }
 
 func TestSerializeCreateRequest(t *testing.T) {
-	rq := CreateRequest{
+	rq := CreateGameRequest{
 		GameID: "anyString",
 	}
-	structures.CompareSerializeDeserialize(t, rq, func(rq CreateRequest) string { return rq.GameID })
+	structures.CompareSerializeDeserialize(t, rq, func(rq CreateGameRequest) string { return rq.GameID })
 }

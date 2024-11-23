@@ -19,7 +19,7 @@ func NewGameState() *GameState {
 
 // updpate the player data on the map
 func (g *GameState) UpdatePlayer(p *PlayerState) {
-	g.Players[p.ID] = *p
+	g.Players[p.GUID] = *p
 }
 
 // update the ball data on the map

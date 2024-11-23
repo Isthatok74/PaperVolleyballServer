@@ -64,7 +64,7 @@ func (s *ServerData) readerws(conn *websocket.Conn) error {
 		if err != nil {
 			break
 		}
-		log.Printf("Message received from %s: %s", conn.RemoteAddr(), msg)
+		log.Printf("[From %s] %s", conn.RemoteAddr(), msg)
 
 		// process it
 		res, err := s.processws(msg)
@@ -156,7 +156,6 @@ func (s *ServerData) processws(msgBody []byte) ([]byte, error) {
 	} else if strings.Contains(typeVal, JsonTagPlayer) {
 
 		// player update, just rebroadcast the same message but to all connected clients
-		log.Println("Processing player event")
 		s.broadcastws(msgBody, game)
 
 	} else if strings.Contains(typeVal, JsonTagBall) {
@@ -193,13 +192,13 @@ func (s *ServerData) handlecreatews() ([]byte, error) {
 
 	// create a game in the data
 	game := *states.NewGameState()
-	s.Games.LoadOrStore(game.ID, game)
+	s.Games.LoadOrStore(game.GUID, game)
 
 	// create message to send back, with the game ID
 	rq := requests.CreateGameRequest{
-		GameID: game.ID,
+		GameID: game.GUID,
 	}
-	msg, err := structures.ToWrappedJSON(rq, game.ID)
+	msg, err := structures.ToWrappedJSON(rq, game.GUID)
 	return msg, err
 }
 
@@ -219,9 +218,9 @@ func handleaddplayerws(msgBody []byte, game *states.GameState) ([]byte, error) {
 	// respond with the updated game state
 	retrq := requests.AddPlayerRequest{
 		ClientPlayerID: rq.ClientPlayerID,
-		ServerPlayerID: newPlayer.ID,
+		ServerPlayerID: newPlayer.GUID,
 	}
-	return structures.ToWrappedJSON(retrq, game.ID)
+	return structures.ToWrappedJSON(retrq, game.GUID)
 }
 
 // send a broadcast message to all clients connected to the specified game

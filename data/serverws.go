@@ -199,9 +199,7 @@ func (s *ServerData) handlecreatews() ([]byte, error) {
 	rq := requests.CreateGameRequest{
 		GameID: game.ID,
 	}
-
 	msg, err := structures.ToWrappedJSON(rq, game.ID)
-	log.Printf("Attempting to send back message: %s", msg)
 	return msg, err
 }
 

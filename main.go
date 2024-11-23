@@ -38,11 +38,6 @@ func main() {
 // * HTTP requests are used for requests that can be made from anywhere (e.g. a web browser). They typically involve a client simply sending a request, processing the request on the server, and then sending back a message to the client.
 func setupRoutesHTTP() {
 	http.Handle("/status", rateLimitHandler(http.HandlerFunc(serverData.HandleStatus), &(serverData.Info)))
-	http.Handle("/create", rateLimitHandler(http.HandlerFunc(serverData.HandleCreate), &(serverData.Info)))
-	http.Handle("/addplayer", rateLimitHandler(http.HandlerFunc(serverData.HandleAddPlayer), &(serverData.Info)))
-
-	// unused
-	http.Handle("/post", rateLimitHandler(http.HandlerFunc(serverData.HandlePost), &(serverData.Info)))
 }
 
 // all of the WebSocket routes are defined here

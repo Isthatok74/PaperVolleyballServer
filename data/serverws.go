@@ -15,12 +15,14 @@ import (
 
 // This is the Websocket implementation for the server
 
+// the module that upgrades the http connection into a websocket connection
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
 	CheckOrigin:     func(r *http.Request) bool { return true }, // allow any connections to this endpoint regardless of what it is
 }
 
+// connect a client via websocket, and register them to the client map
 func (s *ServerData) HandleWS(w http.ResponseWriter, r *http.Request) {
 
 	// upgrade the connection
@@ -38,12 +40,14 @@ func (s *ServerData) HandleWS(w http.ResponseWriter, r *http.Request) {
 	verifMsg := fmt.Sprintf("Server registry of client %s successful!", clientAddr)
 	sendws(conn, websocket.TextMessage, []byte(verifMsg))
 
-	// start reading
+	// start reading from this client's connection
 	err = s.readerws(conn)
 	if err != nil {
 		log.Println(err)
 	}
 }
+
+// listener for messages received from websocket connections
 func (s *ServerData) readerws(conn *websocket.Conn) error {
 	var err error
 	for {
@@ -77,12 +81,16 @@ func (s *ServerData) readerws(conn *websocket.Conn) error {
 	}
 	return err
 }
+
+// send a message to the specified websocket connection
 func sendws(conn *websocket.Conn, messageType int, msgBody []byte) {
 	if err := conn.WriteMessage(messageType, msgBody); err != nil {
 		log.Println(err)
 		return
 	}
 }
+
+// parse a message received from a websocket connection
 func parsews(msgType int, msgBody []byte) ([]byte, error) {
 	switch msgType {
 	case websocket.TextMessage:

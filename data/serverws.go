@@ -2,8 +2,11 @@ package data
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"log"
+	"net"
 	"net/http"
 	"pv-server/data/requests"
 	"pv-server/data/states"
@@ -41,20 +44,51 @@ func (s *ServerData) HandleWS(w http.ResponseWriter, r *http.Request) {
 	s.sendws(conn, websocket.TextMessage, []byte(verifMsg))
 
 	// start reading from this client's connection
-	err = s.readerws(conn)
-	if err != nil {
-		log.Println(err)
-	}
+	go s.readerws(conn)
+}
+
+// close the websocket connection
+func (s *ServerData) closews(conn *websocket.Conn) {
+	conn.Close()
+	s.Clients.CompareAndDelete(conn.RemoteAddr().String(), conn)
+	log.Printf("[%s] Websocket listener stopped", conn.RemoteAddr())
 }
 
 // listener for messages received from websocket connections
-func (s *ServerData) readerws(conn *websocket.Conn) error {
-	var err error
+func (s *ServerData) readerws(conn *websocket.Conn) {
+
+	// define a panic handling function
+	defer func() {
+
+		// handle panic
+		if r := recover(); r != nil {
+			log.Printf("[%s] Panic during websocket listener: %v", conn.RemoteAddr(), r)
+		}
+
+		// close the connection
+		s.closews(conn)
+	}()
+
+	// handle disconnection error
+	handleErrorAndDisconnect := func(err error) {
+		if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+			log.Printf("[%s] Unexpected close error: %v", conn.RemoteAddr(), err)
+		} else if errors.Is(err, io.EOF) {
+			log.Printf("[%s] Connection closed by client", conn.RemoteAddr())
+		} else if nerr, ok := err.(net.Error); ok && nerr.Timeout() {
+			log.Printf("[%s] Read timeout: %v", conn.RemoteAddr(), err)
+		} else {
+			log.Printf("[%s] Error reading message: %v", conn.RemoteAddr(), err)
+		}
+	}
+
+	// continuously listen on the connection
 	for {
 
 		// receive a message when it arrives
 		msgType, msgBody, err := conn.ReadMessage()
 		if err != nil {
+			handleErrorAndDisconnect(err)
 			break
 		}
 
@@ -67,20 +101,21 @@ func (s *ServerData) readerws(conn *websocket.Conn) error {
 		// parse it
 		msg, err := parsews(msgType, msgBody)
 		if err != nil {
-			break
+			log.Printf("Unable to parse a message {%s} from %s: %v", msg, conn.RemoteAddr(), err)
+			continue
 		}
 		log.Printf("[From %s] %s", conn.RemoteAddr(), msg)
 
 		// process it
 		res, err := s.processws(msg)
 		if err != nil {
-			break
+			log.Printf("Unable to process a message {%s} from %s: %v", msg, conn.RemoteAddr(), err)
+			continue
 		}
 
 		// send a result message
 		s.sendws(conn, websocket.TextMessage, res)
 	}
-	return err
 }
 
 // send a message to the specified websocket connection

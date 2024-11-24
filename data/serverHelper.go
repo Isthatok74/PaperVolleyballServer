@@ -19,7 +19,7 @@ func (s *ServerData) FindGame(id string) (*states.GameState, error) {
 	}
 
 	// attempt to cast it to what it should be, in order to return the correct object
-	game, ok := value.(states.GameState)
+	game, ok := value.(*states.GameState)
 	if !ok {
 
 		// if somehow the game isn't the correct type, return nil and an error
@@ -27,5 +27,5 @@ func (s *ServerData) FindGame(id string) (*states.GameState, error) {
 	}
 
 	// return a pointer to the found game and nil error
-	return &game, nil
+	return game, nil
 }

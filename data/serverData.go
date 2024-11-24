@@ -9,8 +9,8 @@ import (
 
 type ServerData struct {
 	Info    states.ServerState // vitals
-	Games   sync.Map           // a map of all ongoing games hosted on this server
-	Clients sync.Map           // a map of all connected players hosted on this server
+	Games   sync.Map           // a map of all ongoing games hosted on this server (key: game.GUID, value: *states.gameState)
+	Clients sync.Map           // a map of all connected players hosted on this server (key: conn.RemoteAddr(), value: *websocket.Conn)
 }
 
 // constructor function to initialize ServerData

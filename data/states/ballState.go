@@ -11,4 +11,6 @@ type BallState struct {
 	Vel        st.Vector2 `json:"Vel"`
 	TouchedBy  string     `json:"TouchedBy"`
 	TouchCount int        `json:"TouchCount"`
+	LiveState  string     `json:"LiveState"`
+	ServeState string     `json:"ServeState"`
 }

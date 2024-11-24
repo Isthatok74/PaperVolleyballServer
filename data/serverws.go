@@ -235,7 +235,7 @@ func (s *ServerData) processws(msgBody []byte) ([]byte, error) {
 	} else if strings.Contains(typeVal, JsonTagBall) {
 
 		// ball update, check whether it is a valid hit or something else happened to the ball already
-		log.Println("Processing ball event")
+		return s.handleballeventws(msgBody, game)
 
 	} else {
 		return []byte{}, fmt.Errorf("unrecognized json tag in received data; unidentifiable message")
@@ -295,6 +295,65 @@ func handleaddplayerws(msgBody []byte, game *states.GameState) ([]byte, error) {
 		ServerPlayerID: newPlayer.GUID,
 	}
 	return structures.ToWrappedJSON(retrq, game.GUID)
+}
+
+func (s *ServerData) handleballeventws(msgBody []byte, game *states.GameState) ([]byte, error) {
+
+	// deserialize the message
+	var clientBall states.BallState
+	structures.FromWrappedJSON(&clientBall, msgBody)
+
+	// if for whatever reason the client's copy of the ball is out of date (e.g. someone else has registered a hit before them or the ball has already died), do not process the request and return a harmless error to the client
+	denyBallUpdate := func() ([]byte, error) {
+
+		// todo: revise output
+		msgDrop := "ball update request denied"
+		log.Println(msgDrop)
+		return []byte(""), errors.New(msgDrop)
+	}
+
+	// begin processing
+	if len(clientBall.GUID) == 0 {
+
+		// handle new ball registry
+		clientBall.GetGUID()
+
+		// register it to the game
+		if game.Ball == nil {
+			game.Ball = &clientBall
+		}
+
+	} else {
+
+		// check if ball id matches the one that is live on the server
+		matchesLiveID := game.Ball != nil && game.Ball.GUID == clientBall.GUID && game.Ball.IsAlive()
+		if !matchesLiveID {
+			return denyBallUpdate()
+		}
+
+		// check whether the client's ball update indicates that the ball is alive
+		isAlive := clientBall.IsAlive()
+		if isAlive {
+
+			// if the ball is still alive, it means the player touched it; check if the touch count makes sense
+			isTouchCountCorrect := clientBall.TouchCount <= 1 || (clientBall.TouchCount-game.Ball.TouchCount == 1)
+			if !isTouchCountCorrect {
+				return denyBallUpdate()
+			}
+
+			// broadcast the updated client ball to other players
+			game.UpdateBall(&clientBall)
+			s.broadcastws(msgBody, game)
+
+		} else {
+
+			// if game ball was alive but client says it's dead, broadcast the dead ball and kill the ball on game side
+			game.UpdateBall(nil)
+			s.broadcastws(msgBody, game)
+		}
+	}
+
+	return structures.ToWrappedJSON(clientBall, game.GUID)
 }
 
 // send a broadcast message to all clients connected to the specified game

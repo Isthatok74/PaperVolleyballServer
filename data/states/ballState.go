@@ -1,16 +1,21 @@
 package states
 
 import (
-	st "pv-server/data/structures"
+	"pv-server/data/structures"
+	"strings"
 )
 
 // represents a game ball, along with all of its state variables
 type BallState struct {
 	BaseState
-	Pos        st.Vector2 `json:"Pos"`
-	Vel        st.Vector2 `json:"Vel"`
-	TouchedBy  string     `json:"TouchedBy"`
-	TouchCount int        `json:"TouchCount"`
-	LiveState  string     `json:"LiveState"`
-	ServeState string     `json:"ServeState"`
+	Pos        structures.Vector2 `json:"Pos"`
+	Vel        structures.Vector2 `json:"Vel"`
+	TouchedBy  string             `json:"TouchedBy"`
+	TouchCount int                `json:"TouchCount"`
+	LiveState  string             `json:"LiveState"`
+	ServeState string             `json:"ServeState"`
+}
+
+func (b *BallState) IsAlive() bool {
+	return strings.Contains(strings.ToLower(b.LiveState), "alive")
 }

@@ -1,10 +1,15 @@
 package states
 
+import (
+	"sync"
+)
+
 // represents a game instance on the server, with all its associated data stored
 type GameState struct {
 	BaseState
 	Ball    *BallState             `json:"Ball"`
 	Players map[string]PlayerState `json:"Players"`
+	mu      sync.Mutex             // Mutex to protect concurrent access to Ball and Players
 }
 
 // initialize a new gameState object
@@ -19,10 +24,14 @@ func NewGameState() *GameState {
 
 // updpate the player data on the map
 func (g *GameState) UpdatePlayer(p *PlayerState) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
 	g.Players[p.GUID] = *p
 }
 
 // update the ball data on the map
 func (g *GameState) UpdateBall(b *BallState) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
 	g.Ball = b
 }

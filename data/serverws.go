@@ -266,7 +266,7 @@ func (s *ServerData) handlecreatews() ([]byte, error) {
 
 	// create a game in the data
 	game := *states.NewGameState()
-	s.Games.LoadOrStore(game.GUID, game)
+	s.Games.LoadOrStore(game.GUID, &game)
 
 	// create message to send back, with the game ID
 	rq := requests.CreateGameRequest{

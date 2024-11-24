@@ -11,7 +11,9 @@ import (
 	"pv-server/data/requests"
 	"pv-server/data/states"
 	"pv-server/data/structures"
+	"pv-server/defs"
 	"strings"
+	"time"
 
 	"github.com/gorilla/websocket"
 )
@@ -70,7 +72,7 @@ func (s *ServerData) readerws(conn *websocket.Conn) {
 	}()
 
 	// handle disconnection error
-	handleErrorAndDisconnect := func(err error) {
+	logMessageErr := func(err error) {
 		if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
 			log.Printf("[%s] Unexpected close error: %v", conn.RemoteAddr(), err)
 		} else if errors.Is(err, io.EOF) {
@@ -82,13 +84,22 @@ func (s *ServerData) readerws(conn *websocket.Conn) {
 		}
 	}
 
+	// setup a timeout check on this connection
+	timeLastMsgReceived := time.Now()
+
 	// continuously listen on the connection
 	for {
+
+		// handle timeout timer
+		if time.Since(timeLastMsgReceived).Minutes() > defs.TimeoutMinutesWS {
+			log.Printf("[%s] Timeout due to no requests received after a long time", conn.RemoteAddr())
+			break
+		}
 
 		// receive a message when it arrives
 		msgType, msgBody, err := conn.ReadMessage()
 		if err != nil {
-			handleErrorAndDisconnect(err)
+			logMessageErr(err)
 			break
 		}
 
@@ -96,6 +107,7 @@ func (s *ServerData) readerws(conn *websocket.Conn) {
 		if len(msgBody) > 0 {
 			s.Info.CountRequests()
 			s.Info.CountBytesReceived(uint64(overheadreceivews(msgBody) + len(msgBody)))
+			timeLastMsgReceived = time.Now()
 		}
 
 		// parse it

@@ -9,6 +9,7 @@ import (
 	"pv-server/data/states"
 	"pv-server/data/structures"
 	"strings"
+	"time"
 )
 
 // This file contains the engine logic for processing game requests
@@ -113,6 +114,19 @@ func (s *ServerData) handlecreate() ([]byte, error) {
 	// create a game in the data
 	game := *states.NewGameState()
 	s.Games.LoadOrStore(game.GUID, &game)
+
+	// start a routine that times the game out if too much time has passed since it last updated
+	checkGameTimeout := func(g *states.GameState) {
+		for g != nil {
+			if g.IsTimeoutExpired() {
+				log.Printf("Deleting game %s due to timeout", g.GUID)
+				s.Games.CompareAndDelete(g.GUID, g)
+				break
+			}
+			time.Sleep(time.Minute) // sleep for some time to prevent high CPU usage and avoid tight looping
+		}
+	}
+	go checkGameTimeout(&game)
 
 	// create message to send back, with the game ID
 	rq := requests.CreateGameRequest{

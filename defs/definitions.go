@@ -1,5 +1,6 @@
 package defs
 
 const (
-	TimeoutMinutesWS = 2
+	TimeoutGameMinutesWS   = 10
+	TimeoutPlayerMinutesWS = 2
 )

@@ -87,7 +87,7 @@ func (s *ServerData) readerws(conn *websocket.Conn) {
 	for {
 
 		// handle timeout timer
-		if time.Since(timeLastMsgReceived).Minutes() > defs.TimeoutMinutesWS {
+		if time.Since(timeLastMsgReceived).Minutes() > defs.TimeoutPlayerMinutesWS {
 			log.Printf("[%s] Timeout due to no requests received after a long time", conn.RemoteAddr())
 			break
 		}

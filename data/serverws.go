@@ -179,7 +179,7 @@ func (s *ServerData) broadcastws(msgBody []byte, game *states.GameState) {
 				return
 			}
 			s.sendws(wsConn, msgBody)
-			log.Printf("[%s] Sending broadcast: %s", addr.String(), msgBody)
+			log.Printf("[%s] Sent broadcast: %s", addr.String(), msgBody)
 		} else {
 			log.Printf("client not found: %s", addr.String())
 		}

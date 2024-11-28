@@ -10,8 +10,8 @@ import (
 type GameState struct {
 	BaseState
 	Ball       *BallState             `json:"Ball"`
-	Players    map[string]PlayerState `json:"Players"`
-	PlayerInfo map[string]PlayerVars  `json:"PlayerInfo"`
+	Players    map[string]PlayerState `json:"Players"`    // todo: make into sync.map?
+	PlayerInfo map[string]PlayerVars  `json:"PlayerInfo"` // todo: make into sync.map?
 	lastUpdate time.Time
 	mu         sync.Mutex // Mutex to protect concurrent access to Ball and Players
 }

@@ -11,6 +11,7 @@ type GameState struct {
 	BaseState
 	Ball       *BallState             `json:"Ball"`
 	Players    map[string]PlayerState `json:"Players"`
+	PlayerInfo map[string]PlayerVars  `json:"PlayerInfo"`
 	lastUpdate time.Time
 	mu         sync.Mutex // Mutex to protect concurrent access to Ball and Players
 }
@@ -26,11 +27,19 @@ func NewGameState() *GameState {
 	return gameState
 }
 
-// updpate the player data on the map
-func (g *GameState) UpdatePlayer(p *PlayerState) {
+// updpate the player game state on the map
+func (g *GameState) UpdatePlayerState(p *PlayerState) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 	g.Players[p.GUID] = *p
+	g.lastUpdate = time.Now()
+}
+
+// update the player variables on the map
+func (g *GameState) UpdatePlayerVars(guid string, p *PlayerVars) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	g.PlayerInfo[guid] = *p
 	g.lastUpdate = time.Now()
 }
 

@@ -5,17 +5,20 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net"
 	"pv-server/data/requests"
 	"pv-server/data/states"
 	"pv-server/data/structures"
 	"strings"
 	"time"
+
+	"github.com/gorilla/websocket"
 )
 
 // This file contains the engine logic for processing game requests
 
 // process an message containing information about an in-game event, and returns a message to send back
-func (s *ServerData) processws(msgBody []byte) ([]byte, error) {
+func (s *ServerData) processws(conn *websocket.Conn, msgBody []byte) ([]byte, error) {
 
 	// deserialize the message
 	var data map[string]interface{}
@@ -72,7 +75,7 @@ func (s *ServerData) processws(msgBody []byte) ([]byte, error) {
 	if strings.Contains(typeVal, JsonTagAddPlayerRequest) {
 
 		// add player request
-		return handleaddplayer(msgBody, game)
+		return handleaddplayer(conn.RemoteAddr(), msgBody, game)
 
 	} else if strings.Contains(typeVal, JsonTagPlayer) {
 
@@ -137,22 +140,26 @@ func (s *ServerData) handlecreate() ([]byte, error) {
 }
 
 // process a player add request
-func handleaddplayer(msgBody []byte, game *states.GameState) ([]byte, error) {
+func handleaddplayer(addr net.Addr, msgBody []byte, game *states.GameState) ([]byte, error) {
 
 	// deserialize the message
 	var rq requests.AddPlayerRequest
 	structures.FromWrappedJSON(&rq, msgBody)
 
 	// decode the JSON body to get player information
-	newPlayer := states.NewPlayerState()
+	newPlayerVars := rq.PlayerVars
+	rq.PlayerVars.GetGUID()
+	rq.PlayerVars.SetAddress(addr)
+	newPlayer := states.PlayerState{}
+	newPlayer.GUID = newPlayerVars.GUID
 
 	// add the player to the game
-	game.UpdatePlayer(newPlayer)
+	game.UpdatePlayerState(&newPlayer)
 
 	// respond with the updated game state
 	retrq := requests.AddPlayerRequest{
 		ClientPlayerID: rq.ClientPlayerID,
-		ServerPlayerID: newPlayer.GUID,
+		ServerPlayerID: newPlayerVars.GUID,
 	}
 	return structures.ToWrappedJSON(retrq, game.GUID)
 }

@@ -115,7 +115,7 @@ func (s *ServerData) readerws(conn *websocket.Conn) {
 		log.Printf("[From %s] %s", conn.RemoteAddr(), msg)
 
 		// process it
-		res, err := s.processws(msg)
+		res, err := s.processws(conn, msg)
 		if err != nil {
 			log.Printf("Unable to process a message {%s} from %s: %v", msg, conn.RemoteAddr(), err)
 			continue

@@ -12,10 +12,3 @@ type PlayerState struct {
 	FaceRight bool       `json:"FaceRight"`
 	Anim      string     `json:"Anim"`
 }
-
-// create a new instance of PlayerState
-func NewPlayerState() *PlayerState {
-	newPlayer := PlayerState{}
-	newPlayer.GetGUID()
-	return &newPlayer
-}

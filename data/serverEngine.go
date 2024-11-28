@@ -148,13 +148,14 @@ func handleaddplayer(addr net.Addr, msgBody []byte, game *states.GameState) ([]b
 
 	// decode the JSON body to get player information
 	newPlayerVars := rq.PlayerVars
-	rq.PlayerVars.GetGUID()
-	rq.PlayerVars.SetAddress(addr)
+	newPlayerVars.GetGUID()
+	newPlayerVars.SetAddress(addr)
 	newPlayer := states.PlayerState{}
 	newPlayer.GUID = newPlayerVars.GUID
 
 	// add the player to the game
 	game.UpdatePlayerState(&newPlayer)
+	game.UpdatePlayerVars(&newPlayerVars)
 
 	// respond with the updated game state
 	retrq := requests.AddPlayerRequest{

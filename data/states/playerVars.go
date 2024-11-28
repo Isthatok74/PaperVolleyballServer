@@ -8,10 +8,10 @@ import (
 type PlayerVars struct {
 	BaseState
 	DisplayName string   `json:"DisplayName"`
-	Strength    int      `json:"Strength"`
-	Speed       int      `json:"Speed"`
-	Jump        int      `json:"Jump"`
-	Size        int      `json:"Size"`
+	Strength    float32  `json:"Strength"`
+	Speed       float32  `json:"Speed"`
+	Jump        float32  `json:"Jump"`
+	Size        float32  `json:"Size"`
 	Tier        int      `json:"Tier"`
 	addr        net.Addr // make private to avoid sending the address out
 }

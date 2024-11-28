@@ -39,7 +39,7 @@ func (s *ServerData) HandleWS(w http.ResponseWriter, r *http.Request) {
 
 	// send a verification message to the client
 	verifMsg := fmt.Sprintf("Server registry of client %s successful!", clientAddr)
-	s.sendws(conn, websocket.TextMessage, []byte(verifMsg))
+	s.sendws(conn, []byte(verifMsg))
 
 	// start reading from this client's connection
 	go s.readerws(conn)
@@ -122,16 +122,15 @@ func (s *ServerData) readerws(conn *websocket.Conn) {
 		}
 
 		// send a result message
-		s.sendws(conn, websocket.TextMessage, res)
+		s.sendws(conn, res)
 	}
 }
 
 // send a message to the specified websocket connection
-func (s *ServerData) sendws(conn *websocket.Conn, messageType int, msgBody []byte) {
+func (s *ServerData) sendws(conn *websocket.Conn, msgBody []byte) {
 	s.Info.CountBytesSent(uint64(overheadsendws(msgBody) + len(msgBody)))
-	if err := conn.WriteMessage(messageType, msgBody); err != nil {
+	if err := conn.WriteMessage(websocket.TextMessage, msgBody); err != nil {
 		log.Println(err)
-		return
 	}
 }
 
@@ -166,9 +165,23 @@ func parsews(msgType int, msgBody []byte) ([]byte, error) {
 // send a broadcast message to all clients connected to the specified game
 func (s *ServerData) broadcastws(msgBody []byte, game *states.GameState) {
 
+	log.Printf("Broadcasting message: %s", msgBody)
+
 	// for each player connected to the game, send the message to the corresponding client
-
-	// todo: we would need to store the player's ip in the playerState, we would need to resolve the discrepancy between their http ip and their ws ip
-	// consider migrating ping, create and add to ws
-
+	for key := range game.PlayerInfo {
+		val := game.PlayerInfo[key]
+		addr := val.GetAddress()
+		conn, found := s.Clients.Load(addr.String())
+		if found {
+			wsConn, ok := conn.(*websocket.Conn)
+			if !ok {
+				log.Printf("connection map item not of type websocket.Conn: %s", addr.String())
+				return
+			}
+			s.sendws(wsConn, msgBody)
+			log.Printf("[%s] Sending broadcast: %s", addr.String(), msgBody)
+		} else {
+			log.Printf("client not found: %s", addr.String())
+		}
+	}
 }

@@ -21,6 +21,7 @@ func NewGameState() *GameState {
 	gameState := &GameState{
 		Ball:       nil,                          // no ball exists yet
 		Players:    make(map[string]PlayerState), // create an empty map of players
+		PlayerInfo: make(map[string]PlayerVars),  // create an empty map of playervars
 		lastUpdate: time.Now(),
 	}
 	gameState.GetGUID()
@@ -36,10 +37,10 @@ func (g *GameState) UpdatePlayerState(p *PlayerState) {
 }
 
 // update the player variables on the map
-func (g *GameState) UpdatePlayerVars(guid string, p *PlayerVars) {
+func (g *GameState) UpdatePlayerVars(p *PlayerVars) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
-	g.PlayerInfo[guid] = *p
+	g.PlayerInfo[p.GUID] = *p
 	g.lastUpdate = time.Now()
 }
 

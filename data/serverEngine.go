@@ -2,7 +2,6 @@ package data
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log"
 	"net"
@@ -172,17 +171,15 @@ func (s *ServerData) handleballevent(msgBody []byte, game *states.GameState) ([]
 	structures.FromWrappedJSON(&clientBall, msgBody)
 
 	// if for whatever reason the client's copy of the ball is out of date (e.g. someone else has registered a hit before them or the ball has already died), do not process the request and return a harmless error to the client
-	denyBallUpdate := func() ([]byte, error) {
-
-		// todo: revise output
-		msgDrop := "ball update request denied"
-		log.Println(msgDrop)
-		return []byte(""), errors.New(msgDrop)
+	denyBallUpdate := func(reason string) ([]byte, error) {
+		err := fmt.Errorf("ball touch request denied, reason: %s", reason)
+		log.Printf("Ball touch denied from: %s; reason: %s", clientBall.TouchedBy, reason)
+		return []byte(""), err
 	}
 
 	// accept the ball update and broadcast it
 	acceptBallUpdate := func(b *states.BallState) ([]byte, error) {
-		sendMsg, err := structures.ToWrappedJSON(b, game.GUID)
+		sendMsg, err := structures.ToWrappedJSON(*b, game.GUID)
 		if err == nil {
 			s.broadcastws(sendMsg, game)
 		} else {
@@ -200,11 +197,10 @@ func (s *ServerData) handleballevent(msgBody []byte, game *states.GameState) ([]
 		// register it to the game
 		if game.Ball == nil {
 			game.Ball = &clientBall
-			game.Ball.GetGUID()
 			log.Printf("Logged new game ball on server : %s", game.Ball.GUID)
 			return acceptBallUpdate(game.Ball)
 		} else {
-			return denyBallUpdate()
+			return denyBallUpdate("A live game ball already exists")
 		}
 
 	} else {
@@ -212,7 +208,7 @@ func (s *ServerData) handleballevent(msgBody []byte, game *states.GameState) ([]
 		// check if ball id matches the one that is live on the server
 		matchesLiveID := game.Ball != nil && game.Ball.GUID == clientBall.GUID && game.Ball.IsAlive()
 		if !matchesLiveID {
-			return denyBallUpdate()
+			return denyBallUpdate("Ball ID doesn't match")
 		}
 
 		// check whether the client's ball update indicates that the ball is alive
@@ -222,7 +218,7 @@ func (s *ServerData) handleballevent(msgBody []byte, game *states.GameState) ([]
 			// if the ball is still alive, it means the player touched it; check if the touch count makes sense
 			isTouchCountCorrect := clientBall.TouchCount <= 1 || (clientBall.TouchCount-game.Ball.TouchCount == 1)
 			if !isTouchCountCorrect {
-				return denyBallUpdate()
+				return denyBallUpdate(fmt.Sprintf("Touch count incorrect: %d (client) vs %d (server)", clientBall.TouchCount, game.Ball.TouchCount))
 			}
 
 			// broadcast the updated client ball to other players
@@ -230,6 +226,11 @@ func (s *ServerData) handleballevent(msgBody []byte, game *states.GameState) ([]
 			return acceptBallUpdate(game.Ball)
 
 		} else {
+
+			// it's possible that the game ball already died and has been set to nil
+			if game.Ball == nil {
+				return denyBallUpdate("Game ball already died or doesn't exist")
+			}
 
 			// if game ball was alive but client says it's dead, broadcast the dead ball and kill the ball on game side
 			game.UpdateBall(nil)

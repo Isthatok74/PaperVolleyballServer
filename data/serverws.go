@@ -167,10 +167,20 @@ func (s *ServerData) broadcastws(msgBody []byte, game *states.GameState) {
 
 	log.Printf("Broadcasting message: %s", msgBody)
 
-	// for each player connected to the game, send the message to the corresponding client
+	// get a list of unique addresses so that messages aren't getting duplicated to the same client
+	addresses := []net.Addr{}
+	seen := make(map[net.Addr]bool)
 	for key := range game.PlayerInfo {
 		val := game.PlayerInfo[key]
 		addr := val.GetAddress()
+		if !seen[addr] {
+			seen[addr] = true
+			addresses = append(addresses, addr)
+		}
+	}
+
+	// for each player connected to the game, send the message to the corresponding client
+	for _, addr := range addresses {
 		conn, found := s.Clients.Load(addr.String())
 		if found {
 			wsConn, ok := conn.(*websocket.Conn)
@@ -179,7 +189,7 @@ func (s *ServerData) broadcastws(msgBody []byte, game *states.GameState) {
 				return
 			}
 			s.sendws(wsConn, msgBody)
-			log.Printf("[%s] Sent broadcast: %s", addr.String(), msgBody)
+			log.Printf("[To %s] Sent broadcast: %s", addr.String(), msgBody)
 		} else {
 			log.Printf("client not found: %s", addr.String())
 		}

@@ -180,6 +180,17 @@ func (s *ServerData) handleballevent(msgBody []byte, game *states.GameState) ([]
 		return []byte(""), errors.New(msgDrop)
 	}
 
+	// accept the ball update and broadcast it
+	acceptBallUpdate := func(b *states.BallState) ([]byte, error) {
+		sendMsg, err := structures.ToWrappedJSON(b, game.GUID)
+		if err == nil {
+			s.broadcastws(sendMsg, game)
+		} else {
+			log.Printf("Error broadcasting accepted ball status: %s", err)
+		}
+		return []byte(""), err
+	}
+
 	// begin processing
 	if len(clientBall.GUID) == 0 {
 
@@ -189,6 +200,11 @@ func (s *ServerData) handleballevent(msgBody []byte, game *states.GameState) ([]
 		// register it to the game
 		if game.Ball == nil {
 			game.Ball = &clientBall
+			game.Ball.GetGUID()
+			log.Printf("Logged new game ball on server : %s", game.Ball.GUID)
+			return acceptBallUpdate(game.Ball)
+		} else {
+			return denyBallUpdate()
 		}
 
 	} else {
@@ -211,15 +227,13 @@ func (s *ServerData) handleballevent(msgBody []byte, game *states.GameState) ([]
 
 			// broadcast the updated client ball to other players
 			game.UpdateBall(&clientBall)
-			s.broadcastws(msgBody, game)
+			return acceptBallUpdate(game.Ball)
 
 		} else {
 
 			// if game ball was alive but client says it's dead, broadcast the dead ball and kill the ball on game side
 			game.UpdateBall(nil)
-			s.broadcastws(msgBody, game)
+			return acceptBallUpdate(&clientBall)
 		}
 	}
-
-	return structures.ToWrappedJSON(clientBall, game.GUID)
 }

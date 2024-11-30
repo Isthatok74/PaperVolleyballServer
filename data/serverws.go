@@ -31,7 +31,7 @@ func (s *ServerData) HandleWS(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println(err)
 	}
-	log.Printf("Client Successfully Connected: %s", r.RemoteAddr)
+	log.Printf("[%s] Client connected", r.RemoteAddr)
 
 	// store the connection to the map
 	clientAddr := conn.RemoteAddr().String()
@@ -112,7 +112,7 @@ func (s *ServerData) readerws(conn *websocket.Conn) {
 			log.Printf("Unable to parse a message {%s} from %s: %v", msg, conn.RemoteAddr(), err)
 			continue
 		}
-		log.Printf("[From %s] %s", conn.RemoteAddr(), msg)
+		log.Printf("[<-%s] %s", conn.RemoteAddr(), msg)
 
 		// process it
 		res, err := s.processws(conn, msg)
@@ -165,7 +165,7 @@ func parsews(msgType int, msgBody []byte) ([]byte, error) {
 // send a broadcast message to all clients connected to the specified game
 func (s *ServerData) broadcastws(msgBody []byte, game *states.GameState) {
 
-	log.Printf("Broadcasting message: %s", msgBody)
+	log.Printf("[->game] (%s): %s", game.GUID, msgBody)
 
 	// get a list of unique addresses so that messages aren't getting duplicated to the same client
 	addresses := []net.Addr{}
@@ -189,7 +189,7 @@ func (s *ServerData) broadcastws(msgBody []byte, game *states.GameState) {
 				return
 			}
 			s.sendws(wsConn, msgBody)
-			log.Printf("[To %s] Sent broadcast: %s", addr.String(), msgBody)
+			log.Printf("[->%s] %s", addr.String(), msgBody)
 		} else {
 			log.Printf("client not found: %s", addr.String())
 		}

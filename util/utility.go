@@ -2,6 +2,7 @@ package util
 
 import (
 	"fmt"
+	"net/http"
 	"sync"
 )
 
@@ -37,4 +38,17 @@ func FormatBytes(bytes uint64) string {
 	default:
 		return fmt.Sprintf("%d bytes", bytes)
 	}
+}
+
+// returns the size of the http header
+func HTTPHeaderSize(header http.Header) uint64 {
+	headerSize := 0
+	for name, values := range header {
+		for _, value := range values {
+			headerSize += len(name) + len(value)
+		}
+	}
+	// Add the final "\r\n" after headers
+	headerSize += 2
+	return uint64(headerSize)
 }

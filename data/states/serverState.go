@@ -2,6 +2,7 @@ package states
 
 import (
 	"fmt"
+	"net/http"
 	"pv-server/util"
 	"sync"
 	"time"
@@ -80,4 +81,35 @@ func (s *ServerState) ListenForShutdown() {
 	}
 
 	fmt.Println("Server has shut down.")
+}
+
+// returns the size of the http request header
+func (s *ServerState) HTTPHeaderBytesReceived(r *http.Request) {
+	s.CountBytesReceived(util.HTTPHeaderSize(r.Header))
+}
+
+// returns the size
+func (s *ServerState) HTTPHeaderBytesSent(w http.ResponseWriter) {
+
+	// estimate HTTP status line size (e.g., "HTTP/1.1 200 OK\r\n")
+	statusAssumed := http.StatusOK
+	statusLine := fmt.Sprintf("HTTP/1.1 %d %s\r\n", statusAssumed, http.StatusText(statusAssumed))
+	statusSize := uint64(len(statusLine))
+
+	// estimate Content-Type line size
+	contentTypeAssumed := "text/plain"
+	contentTypeLine := fmt.Sprintf("Content-Type: " + contentTypeAssumed + "\r\n")
+	contentTypeSize := uint64(len(contentTypeLine))
+
+	// estimate Content-Length line size
+	contentLengthAssumed := 9999
+	contentLengthLine := fmt.Sprintf("Content-Length: %d\r\n", contentLengthAssumed)
+	contentLengthSize := uint64(len(contentLengthLine))
+
+	// get the custom headers size
+	customHeader := w.Header()
+	customHeaderSize := util.HTTPHeaderSize(customHeader)
+
+	// sum up
+	s.CountBytesSent(statusSize + contentTypeSize + contentLengthSize + customHeaderSize)
 }

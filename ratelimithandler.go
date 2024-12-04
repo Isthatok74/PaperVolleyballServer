@@ -12,7 +12,7 @@ import (
 
 var (
 	rateLimitMap sync.Map      // a map of all clients that have registered any type of request to the server
-	rateLimit    = 1000        // max requests per the time window
+	rateLimit    = 300         // max requests per the time window
 	limitWindow  = time.Minute // the time window, after which the rate quota gets reset
 )
 
@@ -25,6 +25,12 @@ type clientRate struct {
 // prevent any single client from sending too many requests in close succession
 func rateLimitHandler(next http.Handler, s *states.ServerState) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		// define a header writing function
+		writeHeader := func(statusCode int) {
+			w.WriteHeader(statusCode)
+			s.HTTPHeaderBytesSent(w)
+		}
 
 		// also track the total number of requests that have been made to the server
 		s.CountRequests()
@@ -47,9 +53,15 @@ func rateLimitHandler(next http.Handler, s *states.ServerState) http.Handler {
 
 		// if the limit is reached, block further requests and return an error
 		if clientRate.count > rateLimit {
-			w.WriteHeader(http.StatusTooManyRequests)
+			writeHeader(http.StatusTooManyRequests)
 			return
 		}
+
+		// tally the data received in the header
+		s.HTTPHeaderBytesReceived(r)
+
+		// estimate the data that will be sent in the header
+		s.HTTPHeaderBytesSent(w)
 
 		// continue to process the actual handler function for the query
 		next.ServeHTTP(w, r)

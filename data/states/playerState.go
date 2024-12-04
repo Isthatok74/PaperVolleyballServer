@@ -11,4 +11,5 @@ type PlayerState struct {
 	Vel       st.Vector2 `json:"Vel"`
 	FaceRight bool       `json:"FaceRight"`
 	Anim      string     `json:"Anim"`
+	AxisX     float32    `json:"AxisX"`
 }

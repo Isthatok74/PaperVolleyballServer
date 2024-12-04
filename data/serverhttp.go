@@ -18,8 +18,9 @@ func (s *ServerData) HandleStatus(w http.ResponseWriter, r *http.Request) {
 	s.WriteHTTP(w, fmt.Sprintf("Estimated data sent: %s \n", util.FormatBytes(s.Info.BytesSent)))
 }
 
-func (s *ServerData) HandleEmpty(w http.ResponseWriter, r *http.Request) {
-
+// return an empty page
+func (s *ServerData) HandleDefault(w http.ResponseWriter, r *http.Request) {
+	s.WriteHTTP(w, "")
 }
 
 // wrap the writer with keeping track of bandwidth sent

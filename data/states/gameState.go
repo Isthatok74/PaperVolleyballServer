@@ -9,9 +9,9 @@ import (
 // represents a game instance on the server, with all its associated data stored
 type GameState struct {
 	BaseState
-	Ball       *BallState             `json:"Ball"`
-	Players    map[string]PlayerState `json:"Players"`    // todo: make into sync.map?
-	PlayerInfo map[string]PlayerVars  `json:"PlayerInfo"` // todo: make into sync.map?
+	Ball       *BallState `json:"Ball"`
+	Players    sync.Map   `json:"Players"`    // key: string; value: PlayerState
+	PlayerInfo sync.Map   `json:"PlayerInfo"` // key: string; value: PlayerVars
 	lastUpdate time.Time
 	mu         sync.Mutex // Mutex to protect concurrent access to Ball and Players
 }
@@ -19,9 +19,7 @@ type GameState struct {
 // initialize a new gameState object
 func NewGameState() *GameState {
 	gameState := &GameState{
-		Ball:       nil,                          // no ball exists yet
-		Players:    make(map[string]PlayerState), // create an empty map of players
-		PlayerInfo: make(map[string]PlayerVars),  // create an empty map of playervars
+		Ball:       nil, // no ball exists yet
 		lastUpdate: time.Now(),
 	}
 	gameState.GetGUID()
@@ -30,17 +28,13 @@ func NewGameState() *GameState {
 
 // updpate the player game state on the map
 func (g *GameState) UpdatePlayerState(p *PlayerState) {
-	g.mu.Lock()
-	defer g.mu.Unlock()
-	g.Players[p.GUID] = *p
+	g.Players.LoadOrStore(p.GUID, *p)
 	g.lastUpdate = time.Now()
 }
 
 // update the player variables on the map
 func (g *GameState) UpdatePlayerVars(p *PlayerVars) {
-	g.mu.Lock()
-	defer g.mu.Unlock()
-	g.PlayerInfo[p.GUID] = *p
+	g.PlayerInfo.LoadOrStore(p.GUID, *p)
 	g.lastUpdate = time.Now()
 }
 

@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/Isthatok74/PaperVolleyballServer/data"
+	"github.com/Isthatok74/PaperVolleyballServer/internal/server"
 )
 
 // global variable to store the server data throughout lifetime of server
-var serverData = data.NewServerData()
+var serverData = server.NewServerData()
 
 // this is the main function of the server, which runs when the program begins
 func main() {

@@ -1,4 +1,4 @@
-package states
+package server
 
 import (
 	"fmt"
@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Isthatok74/PaperVolleyballServer/data/states"
 	"github.com/Isthatok74/PaperVolleyballServer/util"
 )
 
@@ -13,7 +14,7 @@ import (
 
 // ServerState holds the state of the server
 type ServerState struct {
-	BaseState
+	states.BaseState
 	StartTime     string        // the timestamp on which the server was started
 	ReqCount      int           // the number of times requests have been processed
 	BytesReceived uint64        // the amount of data received since the server started

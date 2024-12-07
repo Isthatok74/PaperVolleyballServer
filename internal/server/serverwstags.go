@@ -1,4 +1,4 @@
-package data
+package server
 
 // define some tags for requests that may be received from clients (the same definitions be be found on client code)
 const JsonTagPingRequest string = "ping"

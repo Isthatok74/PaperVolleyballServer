@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Isthatok74/PaperVolleyballServer/data/states"
+	"github.com/Isthatok74/PaperVolleyballServer/internal/server"
 )
 
 // The rate limit handler is a precautionary middleware that limits the number of requests that a client can make to the server over a specified time period.
@@ -24,7 +24,7 @@ type clientRate struct {
 }
 
 // prevent any single client from sending too many requests in close succession
-func rateLimitHandler(next http.Handler, s *states.ServerState) http.Handler {
+func rateLimitHandler(next http.Handler, s *server.ServerState) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		// define a header writing function

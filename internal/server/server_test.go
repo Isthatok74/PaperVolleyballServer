@@ -1,16 +1,14 @@
-package data
+package server
 
 import (
 	"testing"
-
-	"github.com/Isthatok74/PaperVolleyballServer/data/states"
 )
 
 // spam the server with concurrent requests until it reaches the limit
 func TestLimitRequests(t *testing.T) {
-	ss := states.NewServerState()
+	ss := NewServerState()
 
-	for i := 1; i <= states.MaxRequests+1; i++ {
+	for i := 1; i <= MaxRequests+1; i++ {
 		go ss.CountRequests()
 	}
 	<-ss.ShutdownCh // block until the shutdown signal is received

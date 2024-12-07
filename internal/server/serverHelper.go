@@ -3,7 +3,7 @@ package server
 import (
 	"fmt"
 
-	"github.com/Isthatok74/PaperVolleyballServer/internal/pkg/data/states"
+	"github.com/Isthatok74/PaperVolleyballServer/internal/pkg/states"
 )
 
 // Contains helper functions related to managing server data and requests

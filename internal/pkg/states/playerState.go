@@ -1,7 +1,7 @@
 package states
 
 import (
-	st "github.com/Isthatok74/PaperVolleyballServer/internal/pkg/data/structures"
+	st "github.com/Isthatok74/PaperVolleyballServer/internal/pkg/structures"
 )
 
 // represents an ingame player, with all of its state variables

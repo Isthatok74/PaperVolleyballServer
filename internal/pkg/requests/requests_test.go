@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/Isthatok74/PaperVolleyballServer/internal/pkg/data/structures"
+	"github.com/Isthatok74/PaperVolleyballServer/internal/pkg/structures"
 )
 
 func TestSerializePingRequest(t *testing.T) {

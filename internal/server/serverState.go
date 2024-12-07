@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Isthatok74/PaperVolleyballServer/internal/pkg/data/states"
+	"github.com/Isthatok74/PaperVolleyballServer/internal/pkg/states"
 	"github.com/Isthatok74/PaperVolleyballServer/internal/pkg/util"
 )
 

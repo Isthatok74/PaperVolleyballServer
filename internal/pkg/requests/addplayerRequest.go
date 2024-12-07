@@ -1,7 +1,7 @@
 package requests
 
 import (
-	"github.com/Isthatok74/PaperVolleyballServer/internal/pkg/data/states"
+	"github.com/Isthatok74/PaperVolleyballServer/internal/pkg/states"
 )
 
 // represents a game ball, along with all of its state variables

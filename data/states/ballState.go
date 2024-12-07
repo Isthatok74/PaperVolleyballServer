@@ -21,3 +21,17 @@ type BallState struct {
 func (b *BallState) IsAlive() bool {
 	return strings.Contains(strings.ToLower(b.LiveState), "alive")
 }
+
+// make an identical copy of the data, including the guid
+func (b *BallState) Clone() *BallState {
+	return &BallState{
+		BaseState:    b.BaseState,
+		Pos:          b.Pos,
+		Vel:          b.Vel,
+		GravityScale: b.GravityScale,
+		TouchedBy:    b.TouchedBy,
+		TouchCount:   b.TouchCount,
+		LiveState:    b.LiveState,
+		ServeState:   b.ServeState,
+	}
+}

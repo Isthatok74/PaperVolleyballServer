@@ -46,6 +46,16 @@ func (g *GameState) UpdateBall(b *BallState) {
 	g.lastUpdate = time.Now()
 }
 
+// return a copy of the game ball's data for threadsafe operations
+func (g *GameState) GetBallCopy() *BallState {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	if g.Ball == nil {
+		return nil
+	}
+	return g.Ball.Clone()
+}
+
 // returns whether too much time has elapsed since the last game update
 func (g *GameState) IsTimeoutExpired() bool {
 	g.mu.Lock()

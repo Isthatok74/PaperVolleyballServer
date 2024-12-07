@@ -188,6 +188,8 @@ func (s *ServerData) handleballevent(msgBody []byte, game *states.GameState) ([]
 		return []byte(""), err
 	}
 
+	cachedGameBall := game.GetBallCopy()
+
 	// begin processing
 	if len(clientBall.GUID) == 0 {
 
@@ -195,10 +197,10 @@ func (s *ServerData) handleballevent(msgBody []byte, game *states.GameState) ([]
 		clientBall.GetGUID()
 
 		// register it to the game
-		if game.Ball == nil {
-			game.Ball = &clientBall
-			log.Printf("Logged new game ball on server : %s", game.Ball.GUID)
-			return acceptBallUpdate(game.Ball)
+		if cachedGameBall == nil {
+			game.UpdateBall(&clientBall)
+			log.Printf("Logged new game ball on server : %s", clientBall.GUID)
+			return acceptBallUpdate(&clientBall)
 		} else {
 			return denyBallUpdate("A live game ball already exists")
 		}
@@ -206,7 +208,7 @@ func (s *ServerData) handleballevent(msgBody []byte, game *states.GameState) ([]
 	} else {
 
 		// check if ball id matches the one that is live on the server
-		matchesLiveID := game.Ball != nil && game.Ball.GUID == clientBall.GUID && game.Ball.IsAlive()
+		matchesLiveID := cachedGameBall != nil && cachedGameBall.GUID == clientBall.GUID && cachedGameBall.IsAlive()
 		if !matchesLiveID {
 			return denyBallUpdate("Ball ID doesn't match")
 		}
@@ -216,19 +218,19 @@ func (s *ServerData) handleballevent(msgBody []byte, game *states.GameState) ([]
 		if isAlive {
 
 			// if the ball is still alive, it means the player touched it; check if the touch count makes sense
-			isTouchCountCorrect := clientBall.TouchCount <= 1 || (clientBall.TouchCount-game.Ball.TouchCount == 1)
+			isTouchCountCorrect := clientBall.TouchCount <= 1 || (clientBall.TouchCount-cachedGameBall.TouchCount == 1)
 			if !isTouchCountCorrect {
-				return denyBallUpdate(fmt.Sprintf("Touch count incorrect: %d (client) vs %d (server)", clientBall.TouchCount, game.Ball.TouchCount))
+				return denyBallUpdate(fmt.Sprintf("Touch count incorrect: %d (client) vs %d (server)", clientBall.TouchCount, cachedGameBall.TouchCount))
 			}
 
 			// broadcast the updated client ball to other players
 			game.UpdateBall(&clientBall)
-			return acceptBallUpdate(game.Ball)
+			return acceptBallUpdate(&clientBall)
 
 		} else {
 
 			// it's possible that the game ball already died and has been set to nil
-			if game.Ball == nil {
+			if cachedGameBall == nil {
 				return denyBallUpdate("Game ball already died or doesn't exist")
 			}
 

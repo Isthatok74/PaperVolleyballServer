@@ -9,33 +9,19 @@ import (
 // represents a game instance on the server, with all its associated data stored
 type GameState struct {
 	BaseState
-	Ball       *BallState `json:"Ball"`
-	Players    sync.Map   `json:"Players"`    // key: string; value: PlayerState
-	PlayerInfo sync.Map   `json:"PlayerInfo"` // key: string; value: PlayerVars
-	lastUpdate time.Time
-	mu         sync.Mutex // Mutex to protect concurrent access to Ball and Players
+	RegisteredInstance
+	Ball *BallState `json:"Ball"`
+	mu   sync.Mutex // Mutex to protect concurrent access to Ball and Players
 }
 
 // initialize a new gameState object
 func NewGameState() *GameState {
 	gameState := &GameState{
-		Ball:       nil, // no ball exists yet
-		lastUpdate: time.Now(),
+		Ball: nil, // no ball exists yet
 	}
 	gameState.GetGUID()
+	gameState.RegisteredInstance.UpdateTime()
 	return gameState
-}
-
-// updpate the player game state on the map
-func (g *GameState) UpdatePlayerState(p *PlayerState) {
-	g.Players.LoadOrStore(p.GUID, *p)
-	g.lastUpdate = time.Now()
-}
-
-// update the player variables on the map
-func (g *GameState) UpdatePlayerVars(p *PlayerVars) {
-	g.PlayerInfo.LoadOrStore(p.GUID, *p)
-	g.lastUpdate = time.Now()
 }
 
 // update the ball data on the map
@@ -43,7 +29,7 @@ func (g *GameState) UpdateBall(b *BallState) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 	g.Ball = b
-	g.lastUpdate = time.Now()
+	g.RegisteredInstance.UpdateTime()
 }
 
 // return a copy of the game ball's data for threadsafe operations
@@ -60,6 +46,6 @@ func (g *GameState) GetBallCopy() *BallState {
 func (g *GameState) IsTimeoutExpired() bool {
 	g.mu.Lock()
 	defer g.mu.Unlock()
-	durSinceLastUpdate := time.Since(g.lastUpdate)
+	durSinceLastUpdate := time.Since(g.RegisteredInstance.LastUpdate)
 	return durSinceLastUpdate.Minutes() > defs.TimeoutGameMinutesWS
 }

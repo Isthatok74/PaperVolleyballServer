@@ -153,8 +153,8 @@ func handleaddplayer(addr net.Addr, msgBody []byte, game *states.GameState) ([]b
 	newPlayer.GUID = newPlayerVars.GUID
 
 	// add the player to the game
-	game.UpdatePlayerState(&newPlayer)
-	game.UpdatePlayerVars(&newPlayerVars)
+	game.RegisteredInstance.UpdatePlayerState(&newPlayer)
+	game.RegisteredInstance.UpdatePlayerVars(&newPlayerVars)
 
 	// respond with the updated game state
 	retrq := requests.AddPlayerRequest{

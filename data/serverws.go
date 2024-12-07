@@ -170,7 +170,7 @@ func (s *ServerData) broadcastws(msgBody []byte, game *states.GameState) {
 	// get a list of unique addresses so that messages aren't getting duplicated to the same client
 	addresses := []net.Addr{}
 	seen := make(map[net.Addr]bool)
-	game.PlayerInfo.Range(func(key, value any) bool {
+	game.RegisteredInstance.PlayerInfo.Range(func(key, value any) bool {
 		playerVars, ok := value.(states.PlayerVars)
 		if !ok {
 			log.Println("Invalid type in sync.Map")

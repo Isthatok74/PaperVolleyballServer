@@ -2,7 +2,8 @@ package data
 
 import (
 	"fmt"
-	"pv-server/data/states"
+
+	"github.com/Isthatok74/PaperVolleyballServer/data/states"
 )
 
 // Contains helper functions related to managing server data and requests

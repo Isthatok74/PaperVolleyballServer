@@ -1,4 +1,4 @@
-module pv-server
+module github.com/Isthatok74/PaperVolleyballServer
 
 go 1.23.2
 

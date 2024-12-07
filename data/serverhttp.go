@@ -3,7 +3,8 @@ package data
 import (
 	"fmt"
 	"net/http"
-	"pv-server/util"
+
+	"github.com/Isthatok74/PaperVolleyballServer/util"
 )
 
 // Handles the http traffic portion of the server

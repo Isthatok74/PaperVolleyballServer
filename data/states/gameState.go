@@ -1,9 +1,10 @@
 package states
 
 import (
-	"pv-server/defs"
 	"sync"
 	"time"
+
+	"github.com/Isthatok74/PaperVolleyballServer/defs"
 )
 
 // represents a game instance on the server, with all its associated data stored

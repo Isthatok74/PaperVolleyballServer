@@ -1,7 +1,7 @@
 package requests
 
 import (
-	"pv-server/data/states"
+	"github.com/Isthatok74/PaperVolleyballServer/data/states"
 )
 
 // represents a game ball, along with all of its state variables

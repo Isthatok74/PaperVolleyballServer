@@ -1,9 +1,10 @@
 package requests
 
 import (
-	"pv-server/data/structures"
 	"strconv"
 	"testing"
+
+	"github.com/Isthatok74/PaperVolleyballServer/data/structures"
 )
 
 func TestSerializePingRequest(t *testing.T) {

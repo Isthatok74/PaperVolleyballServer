@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"pv-server/data/requests"
-	"pv-server/data/states"
-	"pv-server/data/structures"
 	"strings"
 	"time"
+
+	"github.com/Isthatok74/PaperVolleyballServer/data/requests"
+	"github.com/Isthatok74/PaperVolleyballServer/data/states"
+	"github.com/Isthatok74/PaperVolleyballServer/data/structures"
 
 	"github.com/gorilla/websocket"
 )

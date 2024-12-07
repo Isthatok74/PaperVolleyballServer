@@ -1,8 +1,9 @@
 package states
 
 import (
-	"pv-server/data/structures"
 	"strings"
+
+	"github.com/Isthatok74/PaperVolleyballServer/data/structures"
 )
 
 // represents a game ball, along with all of its state variables

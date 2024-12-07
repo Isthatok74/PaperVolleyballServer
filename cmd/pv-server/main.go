@@ -3,7 +3,8 @@ package main
 import (
 	"fmt"
 	"net/http"
-	"pv-server/data"
+
+	"github.com/Isthatok74/PaperVolleyballServer/data"
 )
 
 // global variable to store the server data throughout lifetime of server

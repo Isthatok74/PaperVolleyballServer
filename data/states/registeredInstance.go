@@ -1,9 +1,10 @@
 package states
 
 import (
-	"pv-server/util"
 	"sync"
 	"time"
+
+	"github.com/Isthatok74/PaperVolleyballServer/util"
 )
 
 // Base struct for instances containing live players

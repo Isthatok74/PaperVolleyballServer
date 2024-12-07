@@ -7,9 +7,10 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"pv-server/data/states"
-	"pv-server/defs"
 	"time"
+
+	"github.com/Isthatok74/PaperVolleyballServer/data/states"
+	"github.com/Isthatok74/PaperVolleyballServer/defs"
 
 	"github.com/gorilla/websocket"
 )

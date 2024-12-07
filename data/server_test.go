@@ -1,8 +1,9 @@
 package data
 
 import (
-	"pv-server/data/states"
 	"testing"
+
+	"github.com/Isthatok74/PaperVolleyballServer/data/states"
 )
 
 // spam the server with concurrent requests until it reaches the limit

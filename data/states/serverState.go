@@ -3,9 +3,10 @@ package states
 import (
 	"fmt"
 	"net/http"
-	"pv-server/util"
 	"sync"
 	"time"
+
+	"github.com/Isthatok74/PaperVolleyballServer/util"
 )
 
 // Purpose: Tracks vital metrics for the server.

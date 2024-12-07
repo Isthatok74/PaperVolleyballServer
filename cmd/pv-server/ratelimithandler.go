@@ -2,9 +2,10 @@ package main
 
 import (
 	"net/http"
-	"pv-server/data/states"
 	"sync"
 	"time"
+
+	"github.com/Isthatok74/PaperVolleyballServer/data/states"
 )
 
 // The rate limit handler is a precautionary middleware that limits the number of requests that a client can make to the server over a specified time period.

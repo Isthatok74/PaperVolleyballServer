@@ -1,8 +1,9 @@
 package data
 
 import (
-	"pv-server/data/states"
 	"sync"
+
+	"github.com/Isthatok74/PaperVolleyballServer/data/states"
 )
 
 // Purpose: A container for all the data tracked by the server in real time

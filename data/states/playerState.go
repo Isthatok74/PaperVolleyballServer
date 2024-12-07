@@ -1,7 +1,7 @@
 package states
 
 import (
-	st "pv-server/data/structures"
+	st "github.com/Isthatok74/PaperVolleyballServer/data/structures"
 )
 
 // represents an ingame player, with all of its state variables

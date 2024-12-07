@@ -1,12 +1,5 @@
 package main
 
-// Deploying instructions:
-// * Build command (run via Terminal): `go build`
-// * You can test on local machine by simply running the .exe to start the server
-// * For servers hosted on Windows, connect to the RDP instance (assuming it is a Windows server), copy the .exe into the server, and run it via Command Prompt
-// * When hosting via cloud services, ensure that the Windows Firewall setting on the instance is set to allow TCP on the specified port number in this file, and potentially also port 80 to allow for websocket connections.
-// * The url for a request will be <http or ws>://<serverAddress>:<port>/<command>. If running locally, the value of <serverAddress> is `localhost``. If deploying on the cloud, then it is the IP address of the server.
-
 import (
 	"fmt"
 	"net/http"

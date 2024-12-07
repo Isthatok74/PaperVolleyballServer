@@ -1,7 +1,7 @@
 ## This repository contains the server code for Paper Volleyball which can be deployed publically. 
 It is currently in development and made publicly accessible for a limited time.
 
-## Deployming instructions
+## Deploying Instructions
 * Ensure all unit tests run successfully: `go test .\...`
 * Build command (run via Terminal): `go build`
 * Test on local machine by simply running the built `.exe` to start the server on console.

@@ -16,7 +16,7 @@ func main() {
 	fmt.Println("Starting server...")
 
 	fmt.Println("Starting rate limiter...")
-	go resetRateLimit()
+	go server.ResetRateLimit()
 
 	fmt.Println("Setting up function handlers...")
 	setupRoutesHTTP()
@@ -34,16 +34,16 @@ func main() {
 func setupRoutesHTTP() {
 
 	// check the status of the server
-	http.Handle("/status", rateLimitHandler(http.HandlerFunc(serverData.HandleStatus), &(serverData.Info)))
+	http.Handle("/status", server.RateLimitHandler(http.HandlerFunc(serverData.HandleStatus), &(serverData.Info)))
 
 	// any other route should still go through the middleware for checks
-	http.Handle("/", rateLimitHandler(http.HandlerFunc(serverData.HandleDefault), &(serverData.Info)))
+	http.Handle("/", server.RateLimitHandler(http.HandlerFunc(serverData.HandleDefault), &(serverData.Info)))
 }
 
 // all of the WebSocket routes are defined here
 // * WebSockets are used for fast and frequent communication between client and server. A connection line is established over perpetual listeners are set up between both sides. Whenever data is transferred, there is little overhead compared to HTTP (which requires writing a header every time data is transferred).
 func setupRoutesWS() {
-	http.Handle("/ws", rateLimitHandler(http.HandlerFunc(serverData.HandleWS), &(serverData.Info)))
+	http.Handle("/ws", server.RateLimitHandler(http.HandlerFunc(serverData.HandleWS), &(serverData.Info)))
 }
 
 // start the server by setting up a listener on the specified port

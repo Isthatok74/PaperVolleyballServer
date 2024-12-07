@@ -18,6 +18,17 @@ func GetSyncMapSize(m *sync.Map) int {
 	return count
 }
 
+// creates a copy of a sync map without copying the mutex lock
+func CopySyncMap(m *sync.Map) *sync.Map {
+	copyMap := &sync.Map{}
+
+	m.Range(func(key, value interface{}) bool {
+		copyMap.Store(key, value)
+		return true
+	})
+	return copyMap
+}
+
 // convert a number of bytes to a legible string
 func FormatBytes(bytes uint64) string {
 	const (

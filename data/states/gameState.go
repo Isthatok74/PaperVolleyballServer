@@ -11,7 +11,7 @@ type GameState struct {
 	BaseState
 	RegisteredInstance
 	Ball *BallState `json:"Ball"`
-	mu   sync.Mutex // Mutex to protect concurrent access to Ball and Players
+	mu   sync.Mutex // Mutex to protect concurrent access to Ball
 }
 
 // initialize a new gameState object

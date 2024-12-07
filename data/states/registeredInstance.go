@@ -1,6 +1,7 @@
 package states
 
 import (
+	"pv-server/util"
 	"sync"
 	"time"
 )
@@ -25,8 +26,18 @@ func (r *RegisteredInstance) UpdatePlayerVars(p *PlayerVars) {
 	r.UpdateTime()
 }
 
+// update the time of the last change in this instance
 func (r *RegisteredInstance) UpdateTime() {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.LastUpdate = time.Now()
+}
+
+// create a clone of the stored instance
+func (r *RegisteredInstance) Clone() *RegisteredInstance {
+	return &RegisteredInstance{
+		Players:    *util.CopySyncMap(&r.Players),
+		PlayerInfo: *util.CopySyncMap(&r.PlayerInfo),
+		LastUpdate: r.LastUpdate,
+	}
 }

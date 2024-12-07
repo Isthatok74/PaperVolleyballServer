@@ -9,8 +9,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Isthatok74/PaperVolleyballServer/data/states"
-	"github.com/Isthatok74/PaperVolleyballServer/defs"
+	"github.com/Isthatok74/PaperVolleyballServer/internal/pkg/data/states"
+	"github.com/Isthatok74/PaperVolleyballServer/internal/pkg/defs"
 
 	"github.com/gorilla/websocket"
 )

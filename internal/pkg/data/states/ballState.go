@@ -3,7 +3,7 @@ package states
 import (
 	"strings"
 
-	"github.com/Isthatok74/PaperVolleyballServer/data/structures"
+	"github.com/Isthatok74/PaperVolleyballServer/internal/pkg/data/structures"
 )
 
 // represents a game ball, along with all of its state variables

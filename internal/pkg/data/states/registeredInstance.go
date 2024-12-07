@@ -4,7 +4,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Isthatok74/PaperVolleyballServer/util"
+	"github.com/Isthatok74/PaperVolleyballServer/internal/pkg/util"
 )
 
 // Base struct for instances containing live players

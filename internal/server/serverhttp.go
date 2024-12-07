@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/Isthatok74/PaperVolleyballServer/util"
+	"github.com/Isthatok74/PaperVolleyballServer/internal/pkg/util"
 )
 
 // Handles the http traffic portion of the server

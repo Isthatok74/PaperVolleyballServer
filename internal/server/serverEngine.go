@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Isthatok74/PaperVolleyballServer/data/requests"
-	"github.com/Isthatok74/PaperVolleyballServer/data/states"
-	"github.com/Isthatok74/PaperVolleyballServer/data/structures"
+	"github.com/Isthatok74/PaperVolleyballServer/internal/pkg/data/requests"
+	"github.com/Isthatok74/PaperVolleyballServer/internal/pkg/data/states"
+	"github.com/Isthatok74/PaperVolleyballServer/internal/pkg/data/structures"
 
 	"github.com/gorilla/websocket"
 )

@@ -4,7 +4,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Isthatok74/PaperVolleyballServer/defs"
+	"github.com/Isthatok74/PaperVolleyballServer/internal/pkg/defs"
 )
 
 // represents a game instance on the server, with all its associated data stored

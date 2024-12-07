@@ -6,8 +6,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Isthatok74/PaperVolleyballServer/data/states"
-	"github.com/Isthatok74/PaperVolleyballServer/util"
+	"github.com/Isthatok74/PaperVolleyballServer/internal/pkg/data/states"
+	"github.com/Isthatok74/PaperVolleyballServer/internal/pkg/util"
 )
 
 // Purpose: Tracks vital metrics for the server.

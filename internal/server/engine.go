@@ -157,17 +157,16 @@ func (s *ServerData) handlecreatelobby() ([]byte, error) {
 		log.Println(errMsg)
 	} else {
 		s.Games.LoadOrStore(lobby.GUID, &lobby)
-		rq.LobbyID = lobby.GUID
 		rq.RoomCode = lobby.RoomCode
-		s.Lobbies.Store(lobby.GUID, lobby)
-		log.Printf("Succesfully registered a lobby with room code {%s} and id: %s", lobby.RoomCode, lobby.GUID)
+		s.Lobbies.Store(lobby.RoomCode, lobby)
+		log.Printf("Succesfully registered a lobby with room code {%s}", lobby.RoomCode)
 
 		// start a routine that times the lobby out if too much time has passed since it last updated
 		checkTimeout := func(l *states.LobbyState) {
 			for l != nil {
 				if l.RegisteredInstance.IsTimeoutExpired() {
-					log.Printf("Deleting lobby %s due to timeout", l.GUID)
-					s.Lobbies.CompareAndDelete(l.GUID, l)
+					log.Printf("Deleting lobby %s due to timeout", l.RoomCode)
+					s.Lobbies.CompareAndDelete(l.RoomCode, l)
 					break
 				}
 				time.Sleep(time.Minute) // sleep for some time to prevent high CPU usage and avoid tight looping
@@ -177,7 +176,7 @@ func (s *ServerData) handlecreatelobby() ([]byte, error) {
 	}
 
 	// return message with the lobby ID or containing the error message
-	msg, err := structures.ToWrappedJSON(rq, lobby.GUID)
+	msg, err := structures.ToWrappedJSON(rq, "")
 	return msg, err
 }
 

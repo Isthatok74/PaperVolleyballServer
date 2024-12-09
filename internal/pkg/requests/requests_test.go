@@ -31,9 +31,8 @@ func TestSerializeCreateGameRequest(t *testing.T) {
 
 func TestSerializeCreateLobbyRequest(t *testing.T) {
 	rq := CreateLobbyRequest{
-		LobbyID:  "anyString",
 		ErrMsg:   "",
 		RoomCode: "JXPQ",
 	}
-	structures.CompareSerializeDeserialize(t, rq, func(rq CreateLobbyRequest) string { return rq.LobbyID + rq.ErrMsg + rq.RoomCode })
+	structures.CompareSerializeDeserialize(t, rq, func(rq CreateLobbyRequest) string { return rq.ErrMsg + rq.RoomCode })
 }

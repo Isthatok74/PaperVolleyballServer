@@ -11,6 +11,5 @@ type CreateGameRequest struct {
 // otherwise, the server may either not respond or return an error message
 type CreateLobbyRequest struct {
 	ErrMsg   string `json:"ErrMsg"`
-	LobbyID  string `json:"LobbyID"`
 	RoomCode string `json:"RoomCode"`
 }

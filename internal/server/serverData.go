@@ -9,6 +9,7 @@ import (
 type ServerData struct {
 	Info    ServerState // vitals
 	Games   sync.Map    // a map of all ongoing games hosted on this server (key: game.GUID, value: *states.gameState)
+	Lobbies sync.Map    // a map of all ongoing lobbies hosted on this server (key: game.GUID, value: *states.lobbyState)
 	Clients sync.Map    // a map of all connected players hosted on this server (key: conn.RemoteAddr(), value: *websocket.Conn)
 }
 

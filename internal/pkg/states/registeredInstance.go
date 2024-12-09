@@ -4,6 +4,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Isthatok74/PaperVolleyballServer/internal/pkg/defs"
 	"github.com/Isthatok74/PaperVolleyballServer/internal/pkg/util"
 )
 
@@ -41,4 +42,12 @@ func (r *RegisteredInstance) Clone() *RegisteredInstance {
 		PlayerInfo: *util.CopySyncMap(&r.PlayerInfo),
 		LastUpdate: r.LastUpdate,
 	}
+}
+
+// returns whether too much time has elapsed since the last game update
+func (g *RegisteredInstance) IsTimeoutExpired() bool {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	durSinceLastUpdate := time.Since(g.LastUpdate)
+	return durSinceLastUpdate.Minutes() > defs.TimeoutGameMinutesWS
 }

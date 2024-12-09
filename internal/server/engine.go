@@ -47,10 +47,14 @@ func (s *ServerData) processws(conn *websocket.Conn, msgBody []byte) ([]byte, er
 		// handle ping request
 		return handleping(msgBody)
 
-	} else if strings.Contains(typeVal, JsonTagCreateRequest) {
+	} else if strings.Contains(typeVal, JsonTagCreateGameRequest) {
 
 		// create game request
-		return s.handlecreate()
+		return s.handlecreategame()
+	} else if strings.Contains(typeVal, JsonTagCreateLobbyRequest) {
+
+		// create lobby request
+		return s.handlecreatelobby()
 	}
 
 	// attempt to find the gameID
@@ -112,16 +116,16 @@ func handleping(msgBody []byte) ([]byte, error) {
 }
 
 // process a game creation request
-func (s *ServerData) handlecreate() ([]byte, error) {
+func (s *ServerData) handlecreategame() ([]byte, error) {
 
 	// create a game in the data
 	game := *states.NewGameState()
 	s.Games.LoadOrStore(game.GUID, &game)
 
 	// start a routine that times the game out if too much time has passed since it last updated
-	checkGameTimeout := func(g *states.GameState) {
+	checkTimeout := func(g *states.GameState) {
 		for g != nil {
-			if g.IsTimeoutExpired() {
+			if g.RegisteredInstance.IsTimeoutExpired() {
 				log.Printf("Deleting game %s due to timeout", g.GUID)
 				s.Games.CompareAndDelete(g.GUID, g)
 				break
@@ -129,13 +133,51 @@ func (s *ServerData) handlecreate() ([]byte, error) {
 			time.Sleep(time.Minute) // sleep for some time to prevent high CPU usage and avoid tight looping
 		}
 	}
-	go checkGameTimeout(&game)
+	go checkTimeout(&game)
 
 	// create message to send back, with the game ID
 	rq := requests.CreateGameRequest{
 		GameID: game.GUID,
 	}
 	msg, err := structures.ToWrappedJSON(rq, game.GUID)
+	return msg, err
+}
+
+// process a lobby creation request
+func (s *ServerData) handlecreatelobby() ([]byte, error) {
+
+	// prepare message
+	rq := requests.CreateLobbyRequest{}
+
+	// create a lobby in the data
+	lobby := states.NewLobbyState(&s.Lobbies)
+	if lobby == nil {
+		errMsg := "There are too many instances of player-hosted lobbies at the moment. Please try again later."
+		rq.ErrMsg = errMsg
+		log.Println(errMsg)
+	} else {
+		s.Games.LoadOrStore(lobby.GUID, &lobby)
+		rq.LobbyID = lobby.GUID
+		rq.RoomCode = lobby.RoomCode
+		s.Lobbies.Store(lobby.GUID, lobby)
+		log.Printf("Succesfully registered a lobby with room code {%s} and id: %s", lobby.RoomCode, lobby.GUID)
+
+		// start a routine that times the lobby out if too much time has passed since it last updated
+		checkTimeout := func(l *states.LobbyState) {
+			for l != nil {
+				if l.RegisteredInstance.IsTimeoutExpired() {
+					log.Printf("Deleting lobby %s due to timeout", l.GUID)
+					s.Lobbies.CompareAndDelete(l.GUID, l)
+					break
+				}
+				time.Sleep(time.Minute) // sleep for some time to prevent high CPU usage and avoid tight looping
+			}
+		}
+		go checkTimeout(lobby)
+	}
+
+	// return message with the lobby ID or containing the error message
+	msg, err := structures.ToWrappedJSON(rq, lobby.GUID)
 	return msg, err
 }
 

@@ -13,6 +13,7 @@ import (
 func (s *ServerData) HandleStatus(w http.ResponseWriter, r *http.Request) {
 	s.WriteHTTP(w, fmt.Sprintf("Server start time: %s \n", s.Info.StartTime))
 	s.WriteHTTP(w, fmt.Sprintf("Number of requests processed: %d \n", s.Info.ReqCount))
+	s.WriteHTTP(w, fmt.Sprintf("Number of active lobbies: %d \n", util.GetSyncMapSize(&(s.Lobbies))))
 	s.WriteHTTP(w, fmt.Sprintf("Number of active games: %d \n", util.GetSyncMapSize(&(s.Games))))
 	s.WriteHTTP(w, fmt.Sprintf("Number of clients connected: %d\n", util.GetSyncMapSize(&(s.Clients))))
 	s.WriteHTTP(w, fmt.Sprintf("Estimated data received: %s \n", util.FormatBytes(s.Info.BytesReceived)))

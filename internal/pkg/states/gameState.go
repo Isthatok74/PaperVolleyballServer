@@ -2,9 +2,6 @@ package states
 
 import (
 	"sync"
-	"time"
-
-	"github.com/Isthatok74/PaperVolleyballServer/internal/pkg/defs"
 )
 
 // represents a game instance on the server, with all its associated data stored
@@ -41,12 +38,4 @@ func (g *GameState) GetBallCopy() *BallState {
 		return nil
 	}
 	return g.Ball.Clone()
-}
-
-// returns whether too much time has elapsed since the last game update
-func (g *GameState) IsTimeoutExpired() bool {
-	g.mu.Lock()
-	defer g.mu.Unlock()
-	durSinceLastUpdate := time.Since(g.RegisteredInstance.LastUpdate)
-	return durSinceLastUpdate.Minutes() > defs.TimeoutGameMinutesWS
 }

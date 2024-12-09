@@ -22,9 +22,18 @@ func TestSerializePlayerRequest(t *testing.T) {
 	structures.CompareSerializeDeserialize(t, rq, func(rq AddPlayerRequest) string { return strconv.Itoa(rq.ClientPlayerID) + rq.ServerPlayerID })
 }
 
-func TestSerializeCreateRequest(t *testing.T) {
+func TestSerializeCreateGameRequest(t *testing.T) {
 	rq := CreateGameRequest{
 		GameID: "anyString",
 	}
 	structures.CompareSerializeDeserialize(t, rq, func(rq CreateGameRequest) string { return rq.GameID })
+}
+
+func TestSerializeCreateLobbyRequest(t *testing.T) {
+	rq := CreateLobbyRequest{
+		LobbyID:  "anyString",
+		ErrMsg:   "",
+		RoomCode: "JXPQ",
+	}
+	structures.CompareSerializeDeserialize(t, rq, func(rq CreateLobbyRequest) string { return rq.LobbyID + rq.ErrMsg + rq.RoomCode })
 }

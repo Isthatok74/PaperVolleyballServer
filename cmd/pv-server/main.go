@@ -2,9 +2,14 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"net"
 	"net/http"
 
+	"github.com/Isthatok74/PaperVolleyballServer/api/grpc/go/greeter"
 	"github.com/Isthatok74/PaperVolleyballServer/internal/server"
+
+	"google.golang.org/grpc"
 )
 
 // global variable to store the server data throughout lifetime of server
@@ -25,8 +30,11 @@ func main() {
 	fmt.Println("Attempting to start server...")
 	startServer()
 
+	fmt.Println("Attempting to start grcp listener...")
+	startgrcp()
+
 	fmt.Println("Setting up shutdown listener...")
-	serverData.Info.ListenForShutdown()
+	serverData.Info.ListenForShutdown(grpcServer)
 }
 
 // all of the HTTP routes are defined here.
@@ -58,6 +66,33 @@ func startServer() {
 		fmt.Println("Starting server on port " + port + "...")
 		if err := http.ListenAndServe(address, nil); err != nil {
 			fmt.Printf("Failed to start server: %v\n", err)
+		}
+	}()
+}
+
+// Define and start the grcp listener
+type grpcsvr struct {
+	greeter.UnimplementedGreeterServer
+}
+
+var grpcServer *grpc.Server
+
+func startgrcp() {
+	port := "53274"
+	address := ":" + port
+
+	lis, err := net.Listen("tcp", address)
+	if err != nil {
+		log.Fatalf("failed to listen: %v", err)
+	}
+
+	grpcServer = grpc.NewServer()
+	greeter.RegisterGreeterServer(grpcServer, &grpcsvr{})
+
+	go func() {
+		fmt.Println("Starting grcp listener on port " + port + "...")
+		if err := grpcServer.Serve(lis); err != nil {
+			log.Fatalf("failed to serve: %v", err)
 		}
 	}()
 }

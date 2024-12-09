@@ -8,6 +8,8 @@ import (
 
 	"github.com/Isthatok74/PaperVolleyballServer/internal/pkg/states"
 	"github.com/Isthatok74/PaperVolleyballServer/internal/pkg/util"
+
+	"google.golang.org/grpc"
 )
 
 // Purpose: Tracks vital metrics for the server.
@@ -72,14 +74,14 @@ const (
 
 // listens for a shutdown call, on which the server will immdiately attempt to shut down
 // * this can be used if any undesirable situations are detected, such as bandwidth being consumed at abnormally high rates
-func (s *ServerState) ListenForShutdown() {
+func (s *ServerState) ListenForShutdown(g *grpc.Server) {
 
 	// Wait for the shutdown signal
 	<-s.ShutdownCh // block until the shutdown signal is received
 	fmt.Println("Shutting down the server...")
 
 	{
-		// insert cleanup logic here as necessary
+		g.GracefulStop()
 	}
 
 	fmt.Println("Server has shut down.")

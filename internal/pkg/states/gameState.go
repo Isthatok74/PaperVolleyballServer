@@ -6,7 +6,6 @@ import (
 
 // represents a game instance on the server, with all its associated data stored
 type GameState struct {
-	BaseState
 	RegisteredInstance
 	Ball *BallState `json:"Ball"`
 	mu   sync.Mutex // Mutex to protect concurrent access to Ball

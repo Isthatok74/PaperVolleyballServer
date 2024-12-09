@@ -76,12 +76,21 @@ func (s *ServerData) processws(conn *websocket.Conn, msgBody []byte) ([]byte, er
 	}
 
 	// figure out what kind of game status update the message contains
-	if strings.Contains(typeVal, JsonTagAddPlayerRequest) {
+	if strings.Contains(typeVal, JsonTagAdmissionRequest) {
 
-		// add player request
-		return handleaddplayer(conn.RemoteAddr(), msgBody, game)
+		// register a client to the server
+		return s.handleadmitplayer(conn.RemoteAddr(), msgBody)
+	} else if strings.Contains(typeVal, JsonTagAddPlayerRequest) {
 
-	} else if strings.Contains(typeVal, JsonTagPlayer) {
+		// add player to game request
+		return s.handleaddplayergame(msgBody)
+
+	} else if strings.Contains(typeVal, JsonTagAddPlayerLobby) {
+
+		// add player to lobby request
+		return s.handleaddplayerlobby(msgBody)
+
+	} else if strings.Contains(typeVal, JsonTagPlayerAction) {
 
 		// player update, just rebroadcast the same message but to all connected clients
 		s.broadcastws(msgBody, game)
@@ -180,30 +189,93 @@ func (s *ServerData) handlecreatelobby() ([]byte, error) {
 	return msg, err
 }
 
-// process a player add request
-func handleaddplayer(addr net.Addr, msgBody []byte, game *states.GameState) ([]byte, error) {
+// initialize a client's data on the server and return their id to the client for communication
+func (s *ServerData) handleadmitplayer(addr net.Addr, msgBody []byte) ([]byte, error) {
+
+	// decode the message body to get player's attributes
+	var rq requests.AdmissionRequest
+	structures.FromWrappedJSON(&rq, msgBody)
+	inputAttributes := rq.Attributes
+
+	// create a new player on the server's player map
+	newPlayer := states.NewPlayer(addr)
+	newPlayer.PlayerAttributes = inputAttributes
+	newPlayer.PlayerAction = states.PlayerAction{}
+	s.Players.LoadOrStore(newPlayer.GUID, newPlayer)
+
+	// return message with the player's ID or containing the error message
+	retrq := requests.AdmissionRequest{
+		ClientPlayerID: rq.ClientPlayerID,
+		ServerPlayerID: newPlayer.GUID,
+	}
+	msg, err := structures.ToWrappedJSON(retrq, "")
+	return msg, err
+}
+
+// process a player add to game request
+func (s *ServerData) handleaddplayergame(msgBody []byte) ([]byte, error) {
 
 	// deserialize the message
-	var rq requests.AddPlayerRequest
+	var rq requests.AddPlayerGameRequest
 	structures.FromWrappedJSON(&rq, msgBody)
 
-	// decode the JSON body to get player information
-	newPlayerVars := rq.PlayerVars
-	newPlayerVars.GetGUID()
-	newPlayerVars.SetAddress(addr)
-	newPlayer := states.PlayerState{}
-	newPlayer.GUID = newPlayerVars.GUID
+	// decode the message body
+	serverPlayerID := rq.ServerPlayerID
+	gameID := rq.GameID
 
-	// add the player to the game
-	game.RegisteredInstance.UpdatePlayerState(&newPlayer)
-	game.RegisteredInstance.UpdatePlayerVars(&newPlayerVars)
-
-	// respond with the updated game state
-	retrq := requests.AddPlayerRequest{
-		ClientPlayerID: rq.ClientPlayerID,
-		ServerPlayerID: newPlayerVars.GUID,
+	// find the player's ID on the player map
+	{
+		player, err := s.FindPlayer(serverPlayerID)
+		if err != nil {
+			return []byte{}, fmt.Errorf("could not find player id in registry: %s", serverPlayerID)
+		}
+		player.GameID = gameID
+		player.UpdateTime()
 	}
-	return structures.ToWrappedJSON(retrq, game.GUID)
+
+	// find the game's ID on the game map
+	{
+		game, err := s.FindGame(gameID)
+		if err != nil {
+			return []byte{}, fmt.Errorf("could not find game id in registry: %s", gameID)
+		}
+		game.Players.LoadOrStore(serverPlayerID, true)
+		game.UpdateTime()
+	}
+
+	// respond by echoing the message
+	return structures.ToWrappedJSON(rq, gameID)
+}
+
+// process a player add to lobby request
+func (s *ServerData) handleaddplayerlobby(msgBody []byte) ([]byte, error) {
+	var rq requests.AddPlayerLobbyRequest
+	structures.FromWrappedJSON(&rq, msgBody)
+
+	// decode the message body
+	serverPlayerID := rq.ServerPlayerID
+	roomCode := rq.RoomCode
+
+	// find the player's ID on the player map
+	{
+		player, err := s.FindPlayer(serverPlayerID)
+		if err != nil {
+			return []byte{}, fmt.Errorf("could not find player id in registry: %s", serverPlayerID)
+		}
+		player.RoomCode = roomCode
+		player.UpdateTime()
+	}
+
+	// find the lobby's ID on the lobby map
+	{
+		lobby, err := s.FindLobby(roomCode)
+		if err != nil {
+			return []byte{}, fmt.Errorf("could not find lobby with room code: %s", roomCode)
+		}
+		lobby.Players.LoadOrStore(serverPlayerID, true)
+		lobby.UpdateTime()
+	}
+	return structures.ToWrappedJSON(rq, "")
 }
 
 func (s *ServerData) handleballevent(msgBody []byte, game *states.GameState) ([]byte, error) {

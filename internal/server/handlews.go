@@ -36,7 +36,7 @@ func (s *ServerData) HandleWS(w http.ResponseWriter, r *http.Request) {
 
 	// store the connection to the map
 	clientAddr := conn.RemoteAddr().String()
-	s.Clients.LoadOrStore(clientAddr, conn)
+	s.Connections.LoadOrStore(clientAddr, conn)
 
 	// send a verification message to the client
 	verifMsg := fmt.Sprintf("Server registry of client %s successful!", clientAddr)
@@ -49,7 +49,7 @@ func (s *ServerData) HandleWS(w http.ResponseWriter, r *http.Request) {
 // close the websocket connection
 func (s *ServerData) closews(conn *websocket.Conn) {
 	conn.Close()
-	s.Clients.CompareAndDelete(conn.RemoteAddr().String(), conn)
+	s.Connections.CompareAndDelete(conn.RemoteAddr().String(), conn)
 	log.Printf("[%s] Websocket listener stopped", conn.RemoteAddr())
 }
 
@@ -171,23 +171,37 @@ func (s *ServerData) broadcastws(msgBody []byte, game *states.GameState) {
 	// get a list of unique addresses so that messages aren't getting duplicated to the same client
 	addresses := []net.Addr{}
 	seen := make(map[net.Addr]bool)
-	game.RegisteredInstance.PlayerInfo.Range(func(key, value any) bool {
-		playerVars, ok := value.(states.PlayerVars)
+	game.RegisteredInstance.Players.Range(func(key, value any) bool {
+
+		// get the player ID
+		playerID, ok := key.(string)
 		if !ok {
 			log.Println("Invalid type in sync.Map")
 			return false
 		}
-		addr := playerVars.GetAddress()
-		if !seen[addr] {
-			seen[addr] = true
-			addresses = append(addresses, addr)
+
+		// lookup the player ID in the player map to get the playerState object
+		ptr, err := s.FindPlayer(playerID)
+		if err != nil {
+			log.Printf("could not find player id in registry (perhaps they have disconnected?): %s", playerID)
+		} else {
+
+			// check if the player is part of this game
+			isPlayerInGame := game.GUID == ptr.GameID
+			if isPlayerInGame {
+				addr := ptr.GetAddress()
+				if !seen[addr] {
+					seen[addr] = true
+					addresses = append(addresses, addr)
+				}
+			}
 		}
 		return true
 	})
 
 	// for each player connected to the game, send the message to the corresponding client
 	for _, addr := range addresses {
-		conn, found := s.Clients.Load(addr.String())
+		conn, found := s.Connections.Load(addr.String())
 		if found {
 			wsConn, ok := conn.(*websocket.Conn)
 			if !ok {

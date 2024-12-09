@@ -7,10 +7,11 @@ import (
 // Purpose: A container for all the data tracked by the server in real time
 
 type ServerData struct {
-	Info    ServerState // vitals
-	Games   sync.Map    // a map of all ongoing games hosted on this server (key: game.GUID, value: *states.gameState)
-	Lobbies sync.Map    // a map of all ongoing lobbies hosted on this server (key: lobby.RoomCode, value: *states.lobbyState)
-	Clients sync.Map    // a map of all connected players hosted on this server (key: conn.RemoteAddr(), value: *websocket.Conn)
+	Info        ServerState // vitals
+	Games       sync.Map    // a map of all ongoing games hosted on this server (key: game.GUID, value: *states.gameState)
+	Lobbies     sync.Map    // a map of all ongoing lobbies hosted on this server (key: lobby.RoomCode, value: *states.lobbyState)
+	Connections sync.Map    // a map of all live connections established on this server (key: conn.RemoteAddr(), value: *websocket.Conn)
+	Players     sync.Map    // a map of all connected clients hosted on this server (key: player.GUID, value: *states.playerState)
 }
 
 // constructor function to initialize ServerData

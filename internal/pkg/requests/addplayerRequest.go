@@ -1,12 +1,13 @@
 package requests
 
-import (
-	"github.com/Isthatok74/PaperVolleyballServer/internal/pkg/states"
-)
+// a request from the client to add a player with specified server id to the game with specified id
+type AddPlayerGameRequest struct {
+	ServerPlayerID string `json:"ServerPlayerID"`
+	GameID         string `json:"GameID"`
+}
 
-// represents a game ball, along with all of its state variables
-type AddPlayerRequest struct {
-	ClientPlayerID int               `json:"ClientPlayerID"`
-	ServerPlayerID string            `json:"ServerPlayerID"`
-	PlayerVars     states.PlayerVars `json:"PlayerVars"`
+// a rqeuest from the client to add a player with specified server id to the lobby with specified room code
+type AddPlayerLobbyRequest struct {
+	ServerPlayerID string `json:"ServerPlayerID"`
+	RoomCode       string `json:"RoomCode"`
 }

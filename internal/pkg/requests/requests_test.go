@@ -14,12 +14,28 @@ func TestSerializePingRequest(t *testing.T) {
 	structures.CompareSerializeDeserialize(t, rq, func(rq PingRequest) string { return rq.PingTime })
 }
 
-func TestSerializePlayerRequest(t *testing.T) {
-	rq := AddPlayerRequest{
+func TestSerializeAdmitRequest(t *testing.T) {
+	rq := AdmissionRequest{
 		ClientPlayerID: 42,
 		ServerPlayerID: "anyString",
 	}
-	structures.CompareSerializeDeserialize(t, rq, func(rq AddPlayerRequest) string { return strconv.Itoa(rq.ClientPlayerID) + rq.ServerPlayerID })
+	structures.CompareSerializeDeserialize(t, rq, func(rq AdmissionRequest) string { return strconv.Itoa(rq.ClientPlayerID) + rq.ServerPlayerID })
+}
+
+func TestSerializeAddPlayerGameRequest(t *testing.T) {
+	rq := AddPlayerGameRequest{
+		GameID:         "xyzguid",
+		ServerPlayerID: "anyString",
+	}
+	structures.CompareSerializeDeserialize(t, rq, func(rq AddPlayerGameRequest) string { return rq.GameID + rq.ServerPlayerID })
+}
+
+func TestSerializeAddPlayerLobbyRequest(t *testing.T) {
+	rq := AddPlayerLobbyRequest{
+		RoomCode:       "QBPX",
+		ServerPlayerID: "anyString",
+	}
+	structures.CompareSerializeDeserialize(t, rq, func(rq AddPlayerLobbyRequest) string { return rq.RoomCode + rq.ServerPlayerID })
 }
 
 func TestSerializeCreateGameRequest(t *testing.T) {

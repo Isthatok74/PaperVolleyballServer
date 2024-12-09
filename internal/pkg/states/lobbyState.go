@@ -8,7 +8,6 @@ import (
 
 // represents a game instance on the server, with all its associated data stored
 type LobbyState struct {
-	BaseState
 	RegisteredInstance
 	RoomCode   string `json:"RoomCode"`
 	Background string `json:"Background"`

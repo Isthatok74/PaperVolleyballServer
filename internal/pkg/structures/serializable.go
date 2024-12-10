@@ -8,13 +8,13 @@ import (
 )
 
 // wrap a serializable object in a WrappedMessage container and return it in json format
-func ToWrappedJSON(b any, gameID string) ([]byte, error) {
+func ToWrappedJSON(b any) ([]byte, error) {
 	data, err := json.Marshal(b)
 	if err != nil {
 		log.Println(err.Error())
 		return []byte{}, err
 	}
-	wm := NewWrappedMessage(reflect.TypeOf(b).String(), string(data), gameID)
+	wm := NewWrappedMessage(reflect.TypeOf(b).String(), string(data))
 	msg, err := json.Marshal(wm)
 	if err != nil {
 		return []byte{}, err
@@ -47,7 +47,7 @@ func FromWrappedJSON(b any, jsonData []byte) error {
 // Generalized test function for serialization/deserialization
 func CompareSerializeDeserialize[T any](t *testing.T, original T, getField func(T) string) {
 	// Serialize to JSON
-	msg, err := ToWrappedJSON(original, "")
+	msg, err := ToWrappedJSON(original)
 	if err != nil {
 		t.Fatalf("Error serializing: %v", err)
 	}

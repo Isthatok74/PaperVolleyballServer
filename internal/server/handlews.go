@@ -164,14 +164,14 @@ func parsews(msgType int, msgBody []byte) ([]byte, error) {
 }
 
 // send a broadcast message to all clients connected to the specified game
-func (s *ServerData) broadcastws(msgBody []byte, game *states.GameState) {
+func (s *ServerData) broadcastws(msgBody []byte, r *states.RegisteredInstance) {
 
-	log.Printf("[->game] (%s): %s", game.GUID, msgBody)
+	log.Printf("[->game] (%s): %s", r.GUID, msgBody)
 
 	// get a list of unique addresses so that messages aren't getting duplicated to the same client
 	addresses := []net.Addr{}
 	seen := make(map[net.Addr]bool)
-	game.RegisteredInstance.Players.Range(func(key, value any) bool {
+	r.Players.Range(func(key, value any) bool {
 
 		// get the player ID
 		playerID, ok := key.(string)
@@ -187,7 +187,7 @@ func (s *ServerData) broadcastws(msgBody []byte, game *states.GameState) {
 		} else {
 
 			// check if the player is part of this game
-			isPlayerInGame := game.GUID == ptr.GameID
+			isPlayerInGame := r.GUID == ptr.GameID
 			if isPlayerInGame {
 				addr := ptr.GetAddress()
 				if !seen[addr] {

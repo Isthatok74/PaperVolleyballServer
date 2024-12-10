@@ -41,7 +41,7 @@ func (s *ServerData) processws(conn *websocket.Conn, msgBody []byte) ([]byte, er
 		return []byte{}, fmt.Errorf("error finding type key in json string; unidentifiable message")
 	}
 
-	// read the wrapped data
+	// read the wrapped data and direct to the processing function
 	if strings.Contains(typeVal, JsonTagPingRequest) {
 
 		// handle ping request
@@ -55,28 +55,7 @@ func (s *ServerData) processws(conn *websocket.Conn, msgBody []byte) ([]byte, er
 
 		// create lobby request
 		return s.handlecreatelobby()
-	}
-
-	// attempt to find the gameID
-	gameVal := ""
-	for key := range data {
-		val := data[key].(string)
-		if strings.Contains(strings.ToLower(key), JsonTagGame) {
-			gameVal = val
-		}
-	}
-	if len(gameVal) == 0 {
-		return []byte{}, fmt.Errorf("error finding game identifier key in json string; unidentifiable message")
-	}
-
-	// verify that the game exists
-	game, err := s.FindGame(gameVal)
-	if err != nil {
-		return []byte{}, fmt.Errorf("could not find game id in registry: %s", gameVal)
-	}
-
-	// figure out what kind of game status update the message contains
-	if strings.Contains(typeVal, JsonTagAdmissionRequest) {
+	} else if strings.Contains(typeVal, JsonTagAdmissionRequest) {
 
 		// register a client to the server
 		return s.handleadmitplayer(conn.RemoteAddr(), msgBody)
@@ -95,16 +74,15 @@ func (s *ServerData) processws(conn *websocket.Conn, msgBody []byte) ([]byte, er
 
 		// check if a room code exists
 		return s.handlechecklobby(msgBody)
-
 	} else if strings.Contains(typeVal, JsonTagPlayerAction) {
 
-		// player update, just rebroadcast the same message but to all connected clients
-		s.broadcastws(msgBody, game)
+		// player update, just rebroadcast the same message but to all connected clients of the corresponding game
+		return s.handleplayeraction(msgBody)
 
 	} else if strings.Contains(typeVal, JsonTagBall) {
 
 		// ball update, check whether it is a valid hit or something else happened to the ball already
-		return s.handleballevent(msgBody, game)
+		return s.handleballevent(msgBody)
 
 	} else {
 		return []byte{}, fmt.Errorf("unrecognized json tag in received data; unidentifiable message")
@@ -116,7 +94,6 @@ func (s *ServerData) processws(conn *websocket.Conn, msgBody []byte) ([]byte, er
 	// if any of these events occur, it is important that all connected clients be notified and synced up with the current state of the game
 
 	// send a verification message back to the client who delivered this message
-	return []byte(fmt.Sprintf("Processed message: %s", msgBody)), nil
 }
 
 // process a ping request
@@ -127,7 +104,7 @@ func handleping(msgBody []byte) ([]byte, error) {
 	structures.FromWrappedJSON(&rq, msgBody)
 
 	// re-serialize the message
-	return structures.ToWrappedJSON(rq, "")
+	return structures.ToWrappedJSON(rq)
 }
 
 // process a game creation request
@@ -154,7 +131,7 @@ func (s *ServerData) handlecreategame() ([]byte, error) {
 	rq := requests.CreateGameRequest{
 		GameID: game.GUID,
 	}
-	msg, err := structures.ToWrappedJSON(rq, game.GUID)
+	msg, err := structures.ToWrappedJSON(rq)
 	return msg, err
 }
 
@@ -191,7 +168,7 @@ func (s *ServerData) handlecreatelobby() ([]byte, error) {
 	}
 
 	// return message with the lobby ID or containing the error message
-	msg, err := structures.ToWrappedJSON(rq, "")
+	msg, err := structures.ToWrappedJSON(rq)
 	return msg, err
 }
 
@@ -214,7 +191,7 @@ func (s *ServerData) handleadmitplayer(addr net.Addr, msgBody []byte) ([]byte, e
 		ClientPlayerID: rq.ClientPlayerID,
 		ServerPlayerID: newPlayer.GUID,
 	}
-	msg, err := structures.ToWrappedJSON(retrq, "")
+	msg, err := structures.ToWrappedJSON(retrq)
 	return msg, err
 }
 
@@ -250,7 +227,7 @@ func (s *ServerData) handleaddplayergame(msgBody []byte) ([]byte, error) {
 	}
 
 	// respond by echoing the message
-	return structures.ToWrappedJSON(rq, gameID)
+	return structures.ToWrappedJSON(rq)
 }
 
 // check if a given room code corresponds to a lobby that exists
@@ -271,7 +248,7 @@ func (s *ServerData) handlechecklobby(msgBody []byte) ([]byte, error) {
 		_, err := s.FindLobby(roomCode)
 		response.Exists = err == nil
 	}
-	return structures.ToWrappedJSON(response, "")
+	return structures.ToWrappedJSON(response)
 }
 
 // process a player add to lobby request
@@ -302,14 +279,58 @@ func (s *ServerData) handleaddplayerlobby(msgBody []byte) ([]byte, error) {
 		lobby.Players.LoadOrStore(serverPlayerID, true)
 		lobby.UpdateTime()
 	}
-	return structures.ToWrappedJSON(rq, "")
+	return structures.ToWrappedJSON(rq)
 }
 
-func (s *ServerData) handleballevent(msgBody []byte, game *states.GameState) ([]byte, error) {
+// process a player action received from the client
+func (s *ServerData) handleplayeraction(msgBody []byte) ([]byte, error) {
+
+	// deserialize the message
+	var playerAction states.PlayerAction
+	structures.FromWrappedJSON(&playerAction, msgBody)
+
+	// find the game that it applies to
+	if len(playerAction.GameID) > 0 {
+
+		game, err := s.FindGame(playerAction.GameID)
+		if err != nil {
+			return []byte{}, fmt.Errorf("could not find game id in registry: %s", playerAction.GameID)
+		}
+
+		// just broadcast the action to all clients in the game
+		s.broadcastws(msgBody, &game.RegisteredInstance)
+		return msgBody, nil
+	}
+
+	// or find the lobby that it applies to
+	if len(playerAction.RoomCode) > 0 {
+
+		lobby, err := s.FindLobby(playerAction.RoomCode)
+		if err != nil {
+			return []byte{}, fmt.Errorf("could not find lobby with room code in registry: %s", playerAction.RoomCode)
+		}
+
+		// just broadcast the action to all clients in the lobby
+		s.broadcastws(msgBody, &lobby.RegisteredInstance)
+		return msgBody, nil
+	}
+
+	// somehow if the message was empty on both gameID and roomcode..? send this error
+	return msgBody, fmt.Errorf("could not find matching instance for player action (nil gameID and roomCode received?)")
+}
+
+// process a ball event received from the client
+func (s *ServerData) handleballevent(msgBody []byte) ([]byte, error) {
 
 	// deserialize the message
 	var clientBall states.BallState
 	structures.FromWrappedJSON(&clientBall, msgBody)
+
+	// find the game that it applies to
+	game, err := s.FindGame(clientBall.GameID)
+	if err != nil {
+		return []byte{}, fmt.Errorf("could not find game id in registry: %s", clientBall.GameID)
+	}
 
 	// if for whatever reason the client's copy of the ball is out of date (e.g. someone else has registered a hit before them or the ball has already died), do not process the request and return a harmless error to the client
 	denyBallUpdate := func(reason string) ([]byte, error) {
@@ -320,15 +341,16 @@ func (s *ServerData) handleballevent(msgBody []byte, game *states.GameState) ([]
 
 	// accept the ball update and broadcast it
 	acceptBallUpdate := func(b *states.BallState) ([]byte, error) {
-		sendMsg, err := structures.ToWrappedJSON(*b, game.GUID)
+		sendMsg, err := structures.ToWrappedJSON(*b)
 		if err == nil {
-			s.broadcastws(sendMsg, game)
+			s.broadcastws(sendMsg, &game.RegisteredInstance)
 		} else {
 			log.Printf("Error broadcasting accepted ball status: %s", err)
 		}
 		return []byte(""), err
 	}
 
+	// grab a local copy of the game ball
 	cachedGameBall := game.GetBallCopy()
 
 	// begin processing

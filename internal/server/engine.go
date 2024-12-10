@@ -80,6 +80,7 @@ func (s *ServerData) processws(conn *websocket.Conn, msgBody []byte) ([]byte, er
 
 		// register a client to the server
 		return s.handleadmitplayer(conn.RemoteAddr(), msgBody)
+
 	} else if strings.Contains(typeVal, JsonTagAddPlayerRequest) {
 
 		// add player to game request
@@ -89,6 +90,11 @@ func (s *ServerData) processws(conn *websocket.Conn, msgBody []byte) ([]byte, er
 
 		// add player to lobby request
 		return s.handleaddplayerlobby(msgBody)
+
+	} else if strings.Contains(typeVal, JsonTagCheckLobbyRequest) {
+
+		// check if a room code exists
+		return s.handlechecklobby(msgBody)
 
 	} else if strings.Contains(typeVal, JsonTagPlayerAction) {
 
@@ -245,6 +251,27 @@ func (s *ServerData) handleaddplayergame(msgBody []byte) ([]byte, error) {
 
 	// respond by echoing the message
 	return structures.ToWrappedJSON(rq, gameID)
+}
+
+// check if a given room code corresponds to a lobby that exists
+func (s *ServerData) handlechecklobby(msgBody []byte) ([]byte, error) {
+	var rq requests.CheckLobbyRequest
+	structures.FromWrappedJSON(&rq, msgBody)
+
+	// decode the message body
+	roomCode := rq.RoomCode
+	response := requests.CheckLobbyRequest{
+		RoomCode: roomCode,
+	}
+	if len(roomCode) != states.NumRoomCodeChars {
+		response.Exists = false
+	} else {
+
+		// search for the lobby and figure out whether it exists
+		_, err := s.FindLobby(roomCode)
+		response.Exists = err == nil
+	}
+	return structures.ToWrappedJSON(response, "")
 }
 
 // process a player add to lobby request

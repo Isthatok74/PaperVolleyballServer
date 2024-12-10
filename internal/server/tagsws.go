@@ -4,6 +4,7 @@ package server
 const JsonTagPingRequest string = "ping"
 const JsonTagCreateGameRequest string = "creategame"
 const JsonTagCreateLobbyRequest string = "createlobby"
+const JsonTagCheckLobbyRequest string = "checklobby"
 const JsonTagAdmissionRequest string = "admission"
 const JsonTagAddPlayerRequest string = "addplayergame"
 const JsonTagAddPlayerLobby string = "addplayerlobby"

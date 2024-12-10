@@ -40,7 +40,7 @@ func (l *LobbyState) generateRoomCode(lobbyMap *sync.Map) bool {
 	numTries := 0
 	for numTries < maxNumRoomCodeTries {
 		numTries++
-		trialCode := randomConsonants(numRoomCodeChars)
+		trialCode := randomConsonants(NumRoomCodeChars)
 		_, roomAlreadyExists := lobbyMap.Load(trialCode)
 		if !roomAlreadyExists {
 			l.RoomCode = trialCode
@@ -51,7 +51,7 @@ func (l *LobbyState) generateRoomCode(lobbyMap *sync.Map) bool {
 }
 
 const maxNumRoomCodeTries = 10000
-const numRoomCodeChars = 4
+const NumRoomCodeChars = 4
 
 // update the background of the lobby
 func (l *LobbyState) UpdateBackground(bgName string) {

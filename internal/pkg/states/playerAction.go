@@ -14,3 +14,6 @@ type PlayerAction struct {
 	GameID    string     `json:"GameID"`    // if non-empty, the game that this update is taking place in
 	RoomCode  string     `json:"RoomCode"`  // if non-empty, the lobby that this update is taking place in
 }
+
+// todo: possibly rename to playerEvent?
+// todo: split functionality of gameID and roomCode by wrapping ths class into PlayerActionMessage

@@ -63,12 +63,12 @@ func (s *ServerData) processws(conn *websocket.Conn, msgBody []byte) ([]byte, er
 	} else if strings.Contains(typeVal, JsonTagAddPlayerRequest) {
 
 		// add player to game request
-		return s.handleaddplayergame(msgBody)
+		return s.handleaddplayergame(conn, msgBody)
 
 	} else if strings.Contains(typeVal, JsonTagAddPlayerLobby) {
 
 		// add player to lobby request
-		return s.handleaddplayerlobby(msgBody)
+		return s.handleaddplayerlobby(conn, msgBody)
 
 	} else if strings.Contains(typeVal, JsonTagCheckLobbyRequest) {
 
@@ -196,7 +196,7 @@ func (s *ServerData) handleadmitplayer(addr net.Addr, msgBody []byte) ([]byte, e
 }
 
 // process a player add to game request
-func (s *ServerData) handleaddplayergame(msgBody []byte) ([]byte, error) {
+func (s *ServerData) handleaddplayergame(conn *websocket.Conn, msgBody []byte) ([]byte, error) {
 
 	// deserialize the message
 	var rq requests.AddPlayerGameRequest
@@ -207,27 +207,66 @@ func (s *ServerData) handleaddplayergame(msgBody []byte) ([]byte, error) {
 	gameID := rq.GameID
 
 	// find the player's ID on the player map
-	{
-		player, err := s.FindPlayer(serverPlayerID)
-		if err != nil {
-			return []byte{}, fmt.Errorf("could not find player id in registry: %s", serverPlayerID)
-		}
-		player.GameID = gameID
-		player.UpdateTime()
+	player, pErr := s.FindPlayer(serverPlayerID)
+	if pErr != nil {
+		return []byte{}, fmt.Errorf("could not find player id in registry: %s", serverPlayerID)
 	}
+	player.GameID = gameID
+	player.UpdateTime()
 
 	// find the game's ID on the game map
-	{
-		game, err := s.FindGame(gameID)
-		if err != nil {
-			return []byte{}, fmt.Errorf("could not find game id in registry: %s", gameID)
-		}
-		game.Players.LoadOrStore(serverPlayerID, true)
-		game.UpdateTime()
+	game, gErr := s.FindGame(gameID)
+	if gErr != nil {
+		return []byte{}, fmt.Errorf("could not find game id in registry: %s", gameID)
 	}
+
+	// send back existing players
+	s.sendGamePlayerIncludes(conn, &game.RegisteredInstance)
+
+	// store the new player
+	game.Players.LoadOrStore(serverPlayerID, true)
+	game.UpdateTime()
+
+	// broadcast their inclusion into the game
+	s.broadcastPlayerJoined(&game.RegisteredInstance, player)
 
 	// respond by echoing the message
 	return structures.ToWrappedJSON(rq)
+}
+
+// helper function to send data of all players in a game to a connection
+func (s *ServerData) sendGamePlayerIncludes(conn *websocket.Conn, r *states.RegisteredInstance) {
+	r.Players.Range(func(pid, _ interface{}) bool {
+		peer, err := s.FindPlayer(pid.(string))
+		if err != nil {
+			log.Printf("Could not find expected player in game with id %s, player id: %s", r.GUID, pid.(string))
+		}
+		includeMsg := requests.PlayerIncludeMessage{
+			Attributes: peer.PlayerAttributes,
+			Action:     peer.PlayerAction,
+		}
+		msg, err := structures.ToWrappedJSON(includeMsg)
+		if err != nil {
+			log.Printf("Unable to wrap PlayerIncludeMessage in a json: %s", err)
+		} else {
+			s.sendws(conn, msg)
+		}
+		return true
+	})
+}
+
+// helper function to send one joining player's info to all connections in a registered instance
+func (s *ServerData) broadcastPlayerJoined(r *states.RegisteredInstance, player *states.PlayerState) {
+	includeMsg := requests.PlayerIncludeMessage{
+		Attributes: player.PlayerAttributes,
+		Action:     player.PlayerAction,
+	}
+	msg, err := structures.ToWrappedJSON(includeMsg)
+	if err != nil {
+		log.Printf("Unable to wrap PlayerIncludeMessage in a json: %s", err)
+	} else {
+		s.broadcastws(msg, r)
+	}
 }
 
 // check if a given room code corresponds to a lobby that exists
@@ -252,7 +291,7 @@ func (s *ServerData) handlechecklobby(msgBody []byte) ([]byte, error) {
 }
 
 // process a player add to lobby request
-func (s *ServerData) handleaddplayerlobby(msgBody []byte) ([]byte, error) {
+func (s *ServerData) handleaddplayerlobby(conn *websocket.Conn, msgBody []byte) ([]byte, error) {
 	var rq requests.AddPlayerLobbyRequest
 	structures.FromWrappedJSON(&rq, msgBody)
 
@@ -261,24 +300,29 @@ func (s *ServerData) handleaddplayerlobby(msgBody []byte) ([]byte, error) {
 	roomCode := rq.RoomCode
 
 	// find the player's ID on the player map
-	{
-		player, err := s.FindPlayer(serverPlayerID)
-		if err != nil {
-			return []byte{}, fmt.Errorf("could not find player id in registry: %s", serverPlayerID)
-		}
-		player.RoomCode = roomCode
-		player.UpdateTime()
+	player, pErr := s.FindPlayer(serverPlayerID)
+	if pErr != nil {
+		return []byte{}, fmt.Errorf("could not find player id in registry: %s", serverPlayerID)
 	}
+	player.RoomCode = roomCode
+	player.UpdateTime()
 
 	// find the lobby's ID on the lobby map
-	{
-		lobby, err := s.FindLobby(roomCode)
-		if err != nil {
-			return []byte{}, fmt.Errorf("could not find lobby with room code: %s", roomCode)
-		}
-		lobby.Players.LoadOrStore(serverPlayerID, true)
-		lobby.UpdateTime()
+	lobby, lErr := s.FindLobby(roomCode)
+	if lErr != nil {
+		return []byte{}, fmt.Errorf("could not find lobby with room code: %s", roomCode)
 	}
+
+	// store the player to the lobby
+	lobby.Players.LoadOrStore(serverPlayerID, true)
+	lobby.UpdateTime()
+
+	// send back a list of existing players in the lobby
+	s.sendGamePlayerIncludes(conn, &lobby.RegisteredInstance)
+
+	// broadcast their inclusion into the game
+	s.broadcastPlayerJoined(&lobby.RegisteredInstance, player)
+
 	return structures.ToWrappedJSON(rq)
 }
 

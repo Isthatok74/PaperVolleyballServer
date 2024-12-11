@@ -6,6 +6,9 @@ import (
 	"github.com/Isthatok74/PaperVolleyballServer/internal/pkg/structures"
 )
 
+// todo: possibly rename to BallEvent?
+// todo: split functionality of gameID and roomCode by wrapping ths class into BallEventMessage
+
 // represents a game ball, along with all of its state variables
 type BallState struct {
 	BaseState

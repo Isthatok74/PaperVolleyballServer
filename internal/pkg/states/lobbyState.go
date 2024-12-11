@@ -17,7 +17,7 @@ type LobbyState struct {
 // initialize a new gameState object
 func NewLobbyState(lobbyMap *sync.Map) *LobbyState {
 	l := &LobbyState{}
-	l.GetGUID()
+	l.GenerateGUID()
 	success := l.generateRoomCode(lobbyMap)
 	l.RegisteredInstance.UpdateTime()
 	if success {

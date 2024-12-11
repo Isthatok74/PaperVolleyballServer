@@ -10,6 +10,6 @@ type BaseState struct {
 }
 
 // a method that should be called to generate a guid for this object
-func (b *BaseState) GetGUID() {
+func (b *BaseState) GenerateGUID() {
 	b.GUID = uuid.New().String()
 }

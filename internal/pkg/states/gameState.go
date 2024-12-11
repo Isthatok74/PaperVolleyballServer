@@ -16,7 +16,7 @@ func NewGameState() *GameState {
 	gameState := &GameState{
 		Ball: nil, // no ball exists yet
 	}
-	gameState.GetGUID()
+	gameState.GenerateGUID()
 	gameState.RegisteredInstance.UpdateTime()
 	return gameState
 }

@@ -242,8 +242,9 @@ func (s *ServerData) sendGamePlayerIncludes(conn *websocket.Conn, r *states.Regi
 			log.Printf("Could not find expected player in game with id %s, player id: %s", r.GUID, pid.(string))
 		}
 		includeMsg := messages.PlayerIncludeMessage{
-			Attributes: peer.PlayerAttributes,
-			Action:     peer.PlayerAction,
+			Attributes:     peer.PlayerAttributes,
+			Action:         peer.PlayerAction,
+			ServerPlayerID: peer.GUID,
 		}
 		msg, err := structures.ToWrappedJSON(includeMsg)
 		if err != nil {
@@ -258,8 +259,9 @@ func (s *ServerData) sendGamePlayerIncludes(conn *websocket.Conn, r *states.Regi
 // helper function to send one joining player's info to all connections in a registered instance
 func (s *ServerData) broadcastPlayerJoined(r *states.RegisteredInstance, player *states.PlayerState) {
 	includeMsg := messages.PlayerIncludeMessage{
-		Attributes: player.PlayerAttributes,
-		Action:     player.PlayerAction,
+		Attributes:     player.PlayerAttributes,
+		Action:         player.PlayerAction,
+		ServerPlayerID: player.GUID,
 	}
 	msg, err := structures.ToWrappedJSON(includeMsg)
 	if err != nil {
@@ -410,7 +412,7 @@ func (s *ServerData) handleballevent(msgBody []byte) ([]byte, error) {
 	if len(clientBall.GUID) == 0 {
 
 		// handle new ball registry
-		clientBall.GetGUID()
+		clientBall.GenerateGUID()
 
 		// register it to the game
 		if cachedGameBall == nil {

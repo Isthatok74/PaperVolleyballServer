@@ -32,7 +32,7 @@ func NewServerState() *ServerState {
 		BytesReceived: 0,
 		BytesSent:     0,
 	}
-	serverState.GetGUID()
+	serverState.GenerateGUID()
 	return serverState
 }
 

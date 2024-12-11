@@ -21,7 +21,7 @@ func NewPlayer(address net.Addr) *PlayerState {
 		GameID:   "",
 		RoomCode: "",
 	}
-	client.ExpirableInstance.GetGUID()
+	client.ExpirableInstance.GenerateGUID()
 	client.ExpirableInstance.UpdateTime()
 	return client
 }

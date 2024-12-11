@@ -1,6 +1,6 @@
-package requests
+package messages
 
 // represents a game ball, along with all of its state variables
-type PingRequest struct {
+type PingMessage struct {
 	PingTime string `json:"PingTime"`
 }

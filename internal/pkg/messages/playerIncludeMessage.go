@@ -1,4 +1,4 @@
-package requests
+package messages
 
 import (
 	"github.com/Isthatok74/PaperVolleyballServer/internal/pkg/states"

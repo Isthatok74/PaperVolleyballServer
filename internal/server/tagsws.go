@@ -1,13 +1,13 @@
 package server
 
 // define some tags for requests that may be received from clients (the same definitions be be found on client code)
-const JsonTagPingRequest string = "ping"
-const JsonTagCreateGameRequest string = "creategame"
-const JsonTagCreateLobbyRequest string = "createlobby"
-const JsonTagCheckLobbyRequest string = "checklobby"
-const JsonTagAdmissionRequest string = "admission"
-const JsonTagAddPlayerRequest string = "addplayergame"
+const JsonTagPingMsg string = "ping"
+const JsonTagCreateGameMsg string = "creategame"
+const JsonTagCreateLobbyMsg string = "createlobby"
+const JsonTagCheckLobbyMsg string = "checklobby"
+const JsonTagAdmissionMsg string = "admission"
+const JsonTagAddPlayerMsg string = "addplayergame"
 const JsonTagAddPlayerLobby string = "addplayerlobby"
-const JsonTagPlayerAction string = "playeraction"
-const JsonTagBall string = "ballstate"
+const JsonTagPlayerEvent string = "playeraction"
+const JsonTagBallEvent string = "ballstate"
 const JsonTagGame string = "game"

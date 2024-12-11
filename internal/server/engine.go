@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Isthatok74/PaperVolleyballServer/internal/pkg/requests"
+	"github.com/Isthatok74/PaperVolleyballServer/internal/pkg/messages"
 	"github.com/Isthatok74/PaperVolleyballServer/internal/pkg/states"
 	"github.com/Isthatok74/PaperVolleyballServer/internal/pkg/structures"
 
@@ -42,25 +42,25 @@ func (s *ServerData) processws(conn *websocket.Conn, msgBody []byte) ([]byte, er
 	}
 
 	// read the wrapped data and direct to the processing function
-	if strings.Contains(typeVal, JsonTagPingRequest) {
+	if strings.Contains(typeVal, JsonTagPingMsg) {
 
 		// handle ping request
 		return handleping(msgBody)
 
-	} else if strings.Contains(typeVal, JsonTagCreateGameRequest) {
+	} else if strings.Contains(typeVal, JsonTagCreateGameMsg) {
 
 		// create game request
 		return s.handlecreategame()
-	} else if strings.Contains(typeVal, JsonTagCreateLobbyRequest) {
+	} else if strings.Contains(typeVal, JsonTagCreateLobbyMsg) {
 
 		// create lobby request
 		return s.handlecreatelobby()
-	} else if strings.Contains(typeVal, JsonTagAdmissionRequest) {
+	} else if strings.Contains(typeVal, JsonTagAdmissionMsg) {
 
 		// register a client to the server
 		return s.handleadmitplayer(conn.RemoteAddr(), msgBody)
 
-	} else if strings.Contains(typeVal, JsonTagAddPlayerRequest) {
+	} else if strings.Contains(typeVal, JsonTagAddPlayerMsg) {
 
 		// add player to game request
 		return s.handleaddplayergame(conn, msgBody)
@@ -70,16 +70,16 @@ func (s *ServerData) processws(conn *websocket.Conn, msgBody []byte) ([]byte, er
 		// add player to lobby request
 		return s.handleaddplayerlobby(conn, msgBody)
 
-	} else if strings.Contains(typeVal, JsonTagCheckLobbyRequest) {
+	} else if strings.Contains(typeVal, JsonTagCheckLobbyMsg) {
 
 		// check if a room code exists
 		return s.handlechecklobby(msgBody)
-	} else if strings.Contains(typeVal, JsonTagPlayerAction) {
+	} else if strings.Contains(typeVal, JsonTagPlayerEvent) {
 
 		// player update, just rebroadcast the same message but to all connected clients of the corresponding game
 		return s.handleplayeraction(msgBody)
 
-	} else if strings.Contains(typeVal, JsonTagBall) {
+	} else if strings.Contains(typeVal, JsonTagBallEvent) {
 
 		// ball update, check whether it is a valid hit or something else happened to the ball already
 		return s.handleballevent(msgBody)
@@ -100,7 +100,7 @@ func (s *ServerData) processws(conn *websocket.Conn, msgBody []byte) ([]byte, er
 func handleping(msgBody []byte) ([]byte, error) {
 
 	// deserialize the message
-	var rq requests.PingRequest
+	var rq messages.PingMessage
 	structures.FromWrappedJSON(&rq, msgBody)
 
 	// re-serialize the message
@@ -128,7 +128,7 @@ func (s *ServerData) handlecreategame() ([]byte, error) {
 	go checkTimeout(&game)
 
 	// create message to send back, with the game ID
-	rq := requests.CreateGameRequest{
+	rq := messages.CreateGameMessage{
 		GameID: game.GUID,
 	}
 	msg, err := structures.ToWrappedJSON(rq)
@@ -139,7 +139,7 @@ func (s *ServerData) handlecreategame() ([]byte, error) {
 func (s *ServerData) handlecreatelobby() ([]byte, error) {
 
 	// prepare message
-	rq := requests.CreateLobbyRequest{}
+	rq := messages.CreateLobbyMessage{}
 
 	// create a lobby in the data
 	lobby := states.NewLobbyState(&s.Lobbies)
@@ -176,7 +176,7 @@ func (s *ServerData) handlecreatelobby() ([]byte, error) {
 func (s *ServerData) handleadmitplayer(addr net.Addr, msgBody []byte) ([]byte, error) {
 
 	// decode the message body to get player's attributes
-	var rq requests.AdmissionRequest
+	var rq messages.AdmissionMessage
 	structures.FromWrappedJSON(&rq, msgBody)
 	inputAttributes := rq.Attributes
 
@@ -187,7 +187,7 @@ func (s *ServerData) handleadmitplayer(addr net.Addr, msgBody []byte) ([]byte, e
 	s.Players.LoadOrStore(newPlayer.GUID, newPlayer)
 
 	// return message with the player's ID or containing the error message
-	retrq := requests.AdmissionRequest{
+	retrq := messages.AdmissionMessage{
 		ClientPlayerID: rq.ClientPlayerID,
 		ServerPlayerID: newPlayer.GUID,
 	}
@@ -199,7 +199,7 @@ func (s *ServerData) handleadmitplayer(addr net.Addr, msgBody []byte) ([]byte, e
 func (s *ServerData) handleaddplayergame(conn *websocket.Conn, msgBody []byte) ([]byte, error) {
 
 	// deserialize the message
-	var rq requests.AddPlayerGameRequest
+	var rq messages.AddPlayerGameMessage
 	structures.FromWrappedJSON(&rq, msgBody)
 
 	// decode the message body
@@ -241,7 +241,7 @@ func (s *ServerData) sendGamePlayerIncludes(conn *websocket.Conn, r *states.Regi
 		if err != nil {
 			log.Printf("Could not find expected player in game with id %s, player id: %s", r.GUID, pid.(string))
 		}
-		includeMsg := requests.PlayerIncludeMessage{
+		includeMsg := messages.PlayerIncludeMessage{
 			Attributes: peer.PlayerAttributes,
 			Action:     peer.PlayerAction,
 		}
@@ -257,7 +257,7 @@ func (s *ServerData) sendGamePlayerIncludes(conn *websocket.Conn, r *states.Regi
 
 // helper function to send one joining player's info to all connections in a registered instance
 func (s *ServerData) broadcastPlayerJoined(r *states.RegisteredInstance, player *states.PlayerState) {
-	includeMsg := requests.PlayerIncludeMessage{
+	includeMsg := messages.PlayerIncludeMessage{
 		Attributes: player.PlayerAttributes,
 		Action:     player.PlayerAction,
 	}
@@ -271,12 +271,12 @@ func (s *ServerData) broadcastPlayerJoined(r *states.RegisteredInstance, player 
 
 // check if a given room code corresponds to a lobby that exists
 func (s *ServerData) handlechecklobby(msgBody []byte) ([]byte, error) {
-	var rq requests.CheckLobbyRequest
+	var rq messages.CheckLobbyMessage
 	structures.FromWrappedJSON(&rq, msgBody)
 
 	// decode the message body
 	roomCode := rq.RoomCode
-	response := requests.CheckLobbyRequest{
+	response := messages.CheckLobbyMessage{
 		RoomCode: roomCode,
 	}
 	if len(roomCode) != states.NumRoomCodeChars {
@@ -292,7 +292,7 @@ func (s *ServerData) handlechecklobby(msgBody []byte) ([]byte, error) {
 
 // process a player add to lobby request
 func (s *ServerData) handleaddplayerlobby(conn *websocket.Conn, msgBody []byte) ([]byte, error) {
-	var rq requests.AddPlayerLobbyRequest
+	var rq messages.AddPlayerLobbyMessage
 	structures.FromWrappedJSON(&rq, msgBody)
 
 	// decode the message body

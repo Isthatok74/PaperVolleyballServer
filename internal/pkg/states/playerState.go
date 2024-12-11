@@ -6,7 +6,6 @@ import (
 
 // a container to store clients' session info,
 type PlayerState struct {
-	BaseState                  // id for key
 	PlayerAction               // ingame transient data
 	PlayerAttributes           // ingame constant data
 	ExpirableInstance          // for handling user timeouts
@@ -22,7 +21,7 @@ func NewPlayer(address net.Addr) *PlayerState {
 		GameID:   "",
 		RoomCode: "",
 	}
-	client.GetGUID()
+	client.ExpirableInstance.GetGUID()
 	client.ExpirableInstance.UpdateTime()
 	return client
 }

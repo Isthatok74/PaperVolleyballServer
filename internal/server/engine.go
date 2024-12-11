@@ -330,15 +330,17 @@ func (s *ServerData) handleaddplayerlobby(conn *websocket.Conn, msgBody []byte) 
 func (s *ServerData) handleplayeraction(msgBody []byte) ([]byte, error) {
 
 	// deserialize the message
-	var playerAction states.PlayerAction
-	structures.FromWrappedJSON(&playerAction, msgBody)
+	var amsg messages.PlayerActionMessage
+	structures.FromWrappedJSON(&amsg, msgBody)
+	gameID := amsg.GameID
+	roomCode := amsg.RoomCode
 
 	// find the game that it applies to
-	if len(playerAction.GameID) > 0 {
+	if len(gameID) > 0 {
 
-		game, err := s.FindGame(playerAction.GameID)
+		game, err := s.FindGame(gameID)
 		if err != nil {
-			return []byte{}, fmt.Errorf("could not find game id in registry: %s", playerAction.GameID)
+			return []byte{}, fmt.Errorf("could not find game id in registry: %s", gameID)
 		}
 
 		// just broadcast the action to all clients in the game
@@ -347,11 +349,11 @@ func (s *ServerData) handleplayeraction(msgBody []byte) ([]byte, error) {
 	}
 
 	// or find the lobby that it applies to
-	if len(playerAction.RoomCode) > 0 {
+	if len(roomCode) > 0 {
 
-		lobby, err := s.FindLobby(playerAction.RoomCode)
+		lobby, err := s.FindLobby(roomCode)
 		if err != nil {
-			return []byte{}, fmt.Errorf("could not find lobby with room code in registry: %s", playerAction.RoomCode)
+			return []byte{}, fmt.Errorf("could not find lobby with room code in registry: %s", roomCode)
 		}
 
 		// just broadcast the action to all clients in the lobby

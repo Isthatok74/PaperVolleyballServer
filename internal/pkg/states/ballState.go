@@ -19,7 +19,6 @@ type BallState struct {
 	TouchCount   int                `json:"TouchCount"`   // the number of touches made on the ball
 	LiveState    string             `json:"LiveState"`    // the live/dead status code of the ball
 	ServeState   string             `json:"ServeState"`   // the service status code of the ball
-	GameID       string             `json:"GameID"`       // the game that this update is taking place in
 }
 
 // returns whether the ball's `LiveState“ indicates that it is alive
@@ -38,6 +37,5 @@ func (b *BallState) Clone() *BallState {
 		TouchCount:   b.TouchCount,
 		LiveState:    b.LiveState,
 		ServeState:   b.ServeState,
-		GameID:       b.GameID,
 	}
 }

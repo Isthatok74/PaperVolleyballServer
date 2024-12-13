@@ -325,7 +325,26 @@ func (s *ServerData) handleaddplayerlobby(conn *websocket.Conn, msgBody []byte) 
 	// broadcast their inclusion into the game
 	s.broadcastPlayerJoined(&lobby.RegisteredInstance, player)
 
+	// assign host if none assigned
+	if len(lobby.HostID) == 0 {
+		lobby.HostID = player.GUID
+	}
+	s.broadcastSyncHostMessage(lobby, lobby.HostID)
+
 	return structures.ToWrappedJSON(rq)
+}
+
+// broadcast the new host in a lobby
+func (s *ServerData) broadcastSyncHostMessage(lobby *states.LobbyState, hostID string) {
+	msg := messages.SyncHostMessage{
+		HostID: hostID,
+	}
+	sendMsg, err := structures.ToWrappedJSON(msg)
+	if err != nil {
+		log.Printf("Unable to send new host message to lobby: %s", err)
+	} else {
+		s.broadcastws(sendMsg, &lobby.RegisteredInstance)
+	}
 }
 
 // process a player action received from the client

@@ -166,7 +166,7 @@ func parsews(msgType int, msgBody []byte) ([]byte, error) {
 // send a broadcast message to all clients connected to the specified game
 func (s *ServerData) broadcastws(msgBody []byte, r *states.RegisteredInstance) {
 
-	log.Printf("[->game] (%s): %s", r.GUID, msgBody)
+	log.Printf("[->inst=%s]: %s", r.GUID, msgBody)
 
 	// get a list of unique addresses so that messages aren't getting duplicated to the same client
 	addresses := []net.Addr{}
@@ -186,14 +186,11 @@ func (s *ServerData) broadcastws(msgBody []byte, r *states.RegisteredInstance) {
 			log.Printf("could not find player id in registry (perhaps they have disconnected?): %s", playerID)
 		} else {
 
-			// check if the player is part of this game
-			isPlayerInGame := r.GUID == ptr.GameID
-			if isPlayerInGame {
-				addr := ptr.GetAddress()
-				if !seen[addr] {
-					seen[addr] = true
-					addresses = append(addresses, addr)
-				}
+			// add the player to the list if the address is distinct
+			addr := ptr.GetAddress()
+			if !seen[addr] {
+				seen[addr] = true
+				addresses = append(addresses, addr)
 			}
 		}
 		return true

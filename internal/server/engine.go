@@ -190,7 +190,6 @@ func (s *ServerData) handleadmitplayer(addr net.Addr, msgBody []byte) ([]byte, e
 	// create a new player on the server's player map
 	newPlayer := states.NewPlayer(addr)
 	newPlayer.PlayerAttributes = inputAttributes
-	newPlayer.PlayerAction = states.PlayerAction{}
 	s.Players.LoadOrStore(newPlayer.GUID, newPlayer)
 
 	// return message with the player's ID or containing the error message
@@ -331,7 +330,18 @@ func (s *ServerData) handleplayeraction(msgBody []byte) ([]byte, error) {
 	var amsg messages.PlayerActionMessage
 	structures.FromWrappedJSON(&amsg, msgBody)
 	gameID := amsg.GameID
+	playerID := amsg.PlayerServerID
 	roomCode := amsg.RoomCode
+
+	// update the player's action stored on the server
+	if len(playerID) > 0 {
+
+		player, pErr := s.FindPlayer(playerID)
+		if pErr != nil {
+			return []byte{}, fmt.Errorf("could not find player id in registry: %s", playerID)
+		}
+		player.UpdatePlayerState(&amsg.Action)
+	}
 
 	// find the game that it applies to
 	if len(gameID) > 0 {

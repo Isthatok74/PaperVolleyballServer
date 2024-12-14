@@ -16,6 +16,8 @@ import (
 )
 
 // This file contains the engine logic for processing game requests
+// * It defines all handlers of messages received from the client, and serves as a function directory for the differents types of messages that can be received
+// * Helper functions are contained in a separate file
 
 // process an message containing information about an in-game event, and returns a message to send back
 func (s *ServerData) processws(conn *websocket.Conn, msgBody []byte) ([]byte, error) {
@@ -51,10 +53,12 @@ func (s *ServerData) processws(conn *websocket.Conn, msgBody []byte) ([]byte, er
 
 		// create game request
 		return s.handlecreategame()
+
 	} else if strings.Contains(typeVal, JsonTagCreateLobbyMsg) {
 
 		// create lobby request
 		return s.handlecreatelobby()
+
 	} else if strings.Contains(typeVal, JsonTagAdmissionMsg) {
 
 		// register a client to the server
@@ -70,10 +74,20 @@ func (s *ServerData) processws(conn *websocket.Conn, msgBody []byte) ([]byte, er
 		// add player to lobby request
 		return s.handleaddplayerlobby(conn, msgBody)
 
+	} else if strings.Contains(typeVal, JsonTagRemPlayerLobby) {
+
+		// remove player from lobby request
+		return s.handleleavelobby(msgBody)
+
+	} else if strings.Contains(typeVal, JsonTagRemPlayerGame) {
+
+		return s.handleleavegame(msgBody)
+
 	} else if strings.Contains(typeVal, JsonTagCheckLobbyMsg) {
 
 		// check if a room code exists
 		return s.handlechecklobby(msgBody)
+
 	} else if strings.Contains(typeVal, JsonTagPlayerEvent) {
 
 		// player update, just rebroadcast the same message but to all connected clients of the corresponding game
@@ -87,13 +101,6 @@ func (s *ServerData) processws(conn *websocket.Conn, msgBody []byte) ([]byte, er
 	} else {
 		return []byte{}, fmt.Errorf("unrecognized json tag in received data; unidentifiable message")
 	}
-
-	// check for any hard-syncing events that need to be broadcasted, e.g.
-	// * ending a rally
-	// * ending the game
-	// if any of these events occur, it is important that all connected clients be notified and synced up with the current state of the game
-
-	// send a verification message back to the client who delivered this message
 }
 
 // process a ping request
@@ -234,43 +241,6 @@ func (s *ServerData) handleaddplayergame(conn *websocket.Conn, msgBody []byte) (
 	return structures.ToWrappedJSON(rq)
 }
 
-// helper function to send data of all players in a game to a connection
-func (s *ServerData) sendGamePlayerIncludes(conn *websocket.Conn, r *states.RegisteredInstance) {
-	r.Players.Range(func(pid, _ interface{}) bool {
-		peer, err := s.FindPlayer(pid.(string))
-		if err != nil {
-			log.Printf("Could not find expected player in game with id %s, player id: %s", r.GUID, pid.(string))
-		}
-		includeMsg := messages.PlayerIncludeMessage{
-			Attributes:     peer.PlayerAttributes,
-			Action:         peer.PlayerAction,
-			ServerPlayerID: peer.GUID,
-		}
-		msg, err := structures.ToWrappedJSON(includeMsg)
-		if err != nil {
-			log.Printf("Unable to wrap PlayerIncludeMessage in a json: %s", err)
-		} else {
-			s.sendws(conn, msg)
-		}
-		return true
-	})
-}
-
-// helper function to send one joining player's info to all connections in a registered instance
-func (s *ServerData) broadcastPlayerJoined(r *states.RegisteredInstance, player *states.PlayerState) {
-	includeMsg := messages.PlayerIncludeMessage{
-		Attributes:     player.PlayerAttributes,
-		Action:         player.PlayerAction,
-		ServerPlayerID: player.GUID,
-	}
-	msg, err := structures.ToWrappedJSON(includeMsg)
-	if err != nil {
-		log.Printf("Unable to wrap PlayerIncludeMessage in a json: %s", err)
-	} else {
-		s.broadcastws(msg, r)
-	}
-}
-
 // check if a given room code corresponds to a lobby that exists
 func (s *ServerData) handlechecklobby(msgBody []byte) ([]byte, error) {
 	var rq messages.CheckLobbyMessage
@@ -334,17 +304,24 @@ func (s *ServerData) handleaddplayerlobby(conn *websocket.Conn, msgBody []byte) 
 	return structures.ToWrappedJSON(rq)
 }
 
-// broadcast the new host in a lobby
-func (s *ServerData) broadcastSyncHostMessage(lobby *states.LobbyState, hostID string) {
-	msg := messages.SyncHostMessage{
-		HostID: hostID,
-	}
-	sendMsg, err := structures.ToWrappedJSON(msg)
-	if err != nil {
-		log.Printf("Unable to send new host message to lobby: %s", err)
-	} else {
-		s.broadcastws(sendMsg, &lobby.RegisteredInstance)
-	}
+// handle a request to remove a player from the lobby
+func (s *ServerData) handleleavelobby(msgBody []byte) ([]byte, error) {
+	var rq messages.LeaveLobbyMessage
+	structures.FromWrappedJSON(&rq, msgBody)
+	roomCode := rq.RoomCode
+	pid := rq.PlayerServerID
+	s.removePlayerLobby(pid, roomCode)
+	return msgBody, nil
+}
+
+// handle a request to remove a player from the game
+func (s *ServerData) handleleavegame(msgBody []byte) ([]byte, error) {
+	var rq messages.LeaveGameMessage
+	structures.FromWrappedJSON(&rq, msgBody)
+	gameID := rq.GameID
+	pid := rq.PlayerServerID
+	s.removePlayerGame(pid, gameID)
+	return msgBody, nil
 }
 
 // process a player action received from the client

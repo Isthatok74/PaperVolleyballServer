@@ -71,13 +71,23 @@ func (s *ServerData) readerws(conn *websocket.Conn) {
 	// handle disconnection error
 	logMessageErr := func(err error) {
 		if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+
 			log.Printf("[%s] Unexpected close error: %v", conn.RemoteAddr(), err)
+			s.processdisconnect(conn)
+
 		} else if errors.Is(err, io.EOF) {
+
 			log.Printf("[%s] Connection closed by client", conn.RemoteAddr())
+			s.processdisconnect(conn)
+
 		} else if nerr, ok := err.(net.Error); ok && nerr.Timeout() {
+
 			log.Printf("[%s] Read timeout: %v", conn.RemoteAddr(), err)
+
 		} else {
+
 			log.Printf("[%s] Error reading message: %v", conn.RemoteAddr(), err)
+
 		}
 	}
 

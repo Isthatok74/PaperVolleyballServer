@@ -6,6 +6,7 @@ import (
 	"github.com/Isthatok74/PaperVolleyballServer/internal/pkg/messages"
 	"github.com/Isthatok74/PaperVolleyballServer/internal/pkg/states"
 	"github.com/Isthatok74/PaperVolleyballServer/internal/pkg/structures"
+	"github.com/Isthatok74/PaperVolleyballServer/internal/pkg/util"
 
 	"github.com/gorilla/websocket"
 )
@@ -85,6 +86,11 @@ func (s *ServerData) removePlayerGame(playerID string, gameID string) {
 			// remove from the instance's player map
 			game.RegisteredInstance.Players.Delete(playerID)
 
+			// delete the instance if no players remain
+			if util.GetSyncMapSize(&game.RegisteredInstance.Players) == 0 {
+				s.Games.Delete(gameID)
+			}
+
 			// remove from the global player map
 			s.Players.Delete(playerID)
 		}
@@ -113,6 +119,11 @@ func (s *ServerData) removePlayerLobby(playerID string, roomCode string) {
 
 			// remove from the instance's player map
 			lobby.RegisteredInstance.Players.Delete(playerID)
+
+			// remove from instance's player map
+			if util.GetSyncMapSize(&lobby.RegisteredInstance.Players) == 0 {
+				s.Lobbies.Delete(roomCode)
+			}
 
 			// remove from the global player map
 			s.Players.Delete(playerID)

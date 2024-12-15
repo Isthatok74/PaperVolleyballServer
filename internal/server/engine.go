@@ -155,7 +155,6 @@ func (s *ServerData) handlecreatelobby() ([]byte, error) {
 		rq.ErrMsg = errMsg
 		log.Println(errMsg)
 	} else {
-		s.Games.LoadOrStore(lobby.GUID, &lobby)
 		rq.RoomCode = lobby.RoomCode
 		s.Lobbies.Store(lobby.RoomCode, lobby)
 		log.Printf("Succesfully registered a lobby with room code {%s}", lobby.RoomCode)

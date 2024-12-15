@@ -23,6 +23,21 @@ func (s *ServerData) assignHostIfNone(r *states.RegisteredInstance, player *stat
 	s.broadcastSyncHostMessage(r, r.HostID)
 }
 
+// for a given leaving player, check if it is the host and reassign the host as necessary
+func (s *ServerData) assignHostIfLeave(r *states.RegisteredInstance, leavingPlayerID string) {
+	if leavingPlayerID == r.HostID {
+		r.HostID = ""
+		r.Players.Range(func(pid, _ interface{}) bool {
+			if pid.(string) == leavingPlayerID {
+				return true
+			}
+			r.HostID = pid.(string)
+			return false
+		})
+		s.broadcastSyncHostMessage(r, r.HostID)
+	}
+}
+
 // helper function to send one joining player's info to all connections in a registered instance
 func (s *ServerData) broadcastPlayerJoined(r *states.RegisteredInstance, player *states.PlayerState) {
 	includeMsg := messages.PlayerIncludeMessage{
@@ -99,10 +114,13 @@ func (s *ServerData) removePlayerGame(playerID string, gameID string) {
 			// delete the instance if no players remain
 			if util.GetSyncMapSize(&game.RegisteredInstance.Players) == 0 {
 				s.Games.Delete(gameID)
+			} else {
+				s.assignHostIfLeave(&game.RegisteredInstance, playerID)
 			}
 
 			// remove from the global player map
 			s.Players.Delete(playerID)
+
 		}
 	}
 }
@@ -133,6 +151,8 @@ func (s *ServerData) removePlayerLobby(playerID string, roomCode string) {
 			// remove from instance's player map
 			if util.GetSyncMapSize(&lobby.RegisteredInstance.Players) == 0 {
 				s.Lobbies.Delete(roomCode)
+			} else {
+				s.assignHostIfLeave(&lobby.RegisteredInstance, playerID)
 			}
 
 			// remove from the global player map

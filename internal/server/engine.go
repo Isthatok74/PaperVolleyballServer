@@ -27,7 +27,7 @@ func (s *ServerData) processws(conn *websocket.Conn, msgBody []byte) ([]byte, er
 	err := json.Unmarshal(msgBody, &data)
 	if err != nil {
 		fmt.Println("Error parsing incoming message: ", err)
-		return []byte{}, err
+		return nil, err
 	}
 
 	// search for the "type" key-value pair to determine what type of data was pased in
@@ -40,7 +40,7 @@ func (s *ServerData) processws(conn *websocket.Conn, msgBody []byte) ([]byte, er
 		}
 	}
 	if len(typeVal) == 0 {
-		return []byte{}, fmt.Errorf("error finding type key in json string; unidentifiable message")
+		return nil, fmt.Errorf("error finding type key in json string; unidentifiable message")
 	}
 
 	// read the wrapped data and direct to the processing function
@@ -99,7 +99,7 @@ func (s *ServerData) processws(conn *websocket.Conn, msgBody []byte) ([]byte, er
 		return s.handleballevent(msgBody)
 
 	} else {
-		return []byte{}, fmt.Errorf("unrecognized json tag in received data; unidentifiable message")
+		return nil, fmt.Errorf("unrecognized json tag in received data; unidentifiable message")
 	}
 }
 
@@ -214,7 +214,7 @@ func (s *ServerData) handleaddplayergame(conn *websocket.Conn, msgBody []byte) (
 	// find the player's ID on the player map
 	player, pErr := s.FindPlayer(serverPlayerID)
 	if pErr != nil {
-		return []byte{}, fmt.Errorf("could not find player id in registry: %s", serverPlayerID)
+		return nil, fmt.Errorf("could not find player id in registry: %s", serverPlayerID)
 	}
 	player.GameID = gameID
 	player.UpdateTime()
@@ -222,7 +222,7 @@ func (s *ServerData) handleaddplayergame(conn *websocket.Conn, msgBody []byte) (
 	// find the game's ID on the game map
 	game, gErr := s.FindGame(gameID)
 	if gErr != nil {
-		return []byte{}, fmt.Errorf("could not find game id in registry: %s", gameID)
+		return nil, fmt.Errorf("could not find game id in registry: %s", gameID)
 	}
 
 	// send back existing players
@@ -272,7 +272,7 @@ func (s *ServerData) handleaddplayerlobby(conn *websocket.Conn, msgBody []byte) 
 	// find the player's ID on the player map
 	player, pErr := s.FindPlayer(serverPlayerID)
 	if pErr != nil {
-		return []byte{}, fmt.Errorf("could not find player id in registry: %s", serverPlayerID)
+		return nil, fmt.Errorf("could not find player id in registry: %s", serverPlayerID)
 	}
 	player.RoomCode = roomCode
 	player.UpdateTime()
@@ -280,7 +280,7 @@ func (s *ServerData) handleaddplayerlobby(conn *websocket.Conn, msgBody []byte) 
 	// find the lobby's ID on the lobby map
 	lobby, lErr := s.FindLobby(roomCode)
 	if lErr != nil {
-		return []byte{}, fmt.Errorf("could not find lobby with room code: %s", roomCode)
+		return nil, fmt.Errorf("could not find lobby with room code: %s", roomCode)
 	}
 
 	// store the player to the lobby
@@ -337,7 +337,7 @@ func (s *ServerData) handleplayeraction(msgBody []byte) ([]byte, error) {
 
 		player, pErr := s.FindPlayer(playerID)
 		if pErr != nil {
-			return []byte{}, fmt.Errorf("could not find player id in registry: %s", playerID)
+			return nil, fmt.Errorf("could not find player id in registry: %s", playerID)
 		}
 		player.UpdatePlayerState(&amsg.Action)
 	}
@@ -347,7 +347,7 @@ func (s *ServerData) handleplayeraction(msgBody []byte) ([]byte, error) {
 
 		game, err := s.FindGame(gameID)
 		if err != nil {
-			return []byte{}, fmt.Errorf("could not find game id in registry: %s", gameID)
+			return nil, fmt.Errorf("could not find game id in registry: %s", gameID)
 		}
 
 		// just broadcast the action to all clients in the game
@@ -360,7 +360,7 @@ func (s *ServerData) handleplayeraction(msgBody []byte) ([]byte, error) {
 
 		lobby, err := s.FindLobby(roomCode)
 		if err != nil {
-			return []byte{}, fmt.Errorf("could not find lobby with room code in registry: %s", roomCode)
+			return nil, fmt.Errorf("could not find lobby with room code in registry: %s", roomCode)
 		}
 
 		// just broadcast the action to all clients in the lobby
@@ -385,14 +385,14 @@ func (s *ServerData) handleballevent(msgBody []byte) ([]byte, error) {
 	// find the game that it applies to
 	game, err := s.FindGame(gameID)
 	if err != nil {
-		return []byte{}, fmt.Errorf("could not find game id in registry: %s", gameID)
+		return nil, fmt.Errorf("could not find game id in registry: %s", gameID)
 	}
 
 	// if for whatever reason the client's copy of the ball is out of date (e.g. someone else has registered a hit before them or the ball has already died), do not process the request and return a harmless error to the client
 	denyBallUpdate := func(reason string) ([]byte, error) {
 		err := fmt.Errorf("ball touch request denied, reason: %s", reason)
 		log.Printf("Ball touch denied from: %s; reason: %s", clientBall.TouchedBy, reason)
-		return []byte(""), err
+		return nil, err
 	}
 
 	// accept the ball update and broadcast it
@@ -407,7 +407,7 @@ func (s *ServerData) handleballevent(msgBody []byte) ([]byte, error) {
 		} else {
 			log.Printf("Error broadcasting accepted ball status: %s", err)
 		}
-		return []byte(""), err
+		return nil, err
 	}
 
 	// grab a local copy of the game ball

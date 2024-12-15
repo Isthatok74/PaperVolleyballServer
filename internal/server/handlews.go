@@ -139,6 +139,9 @@ func (s *ServerData) readerws(conn *websocket.Conn) {
 
 // send a message to the specified websocket connection
 func (s *ServerData) sendws(conn *websocket.Conn, msgBody []byte) {
+	if msgBody == nil {
+		return
+	}
 	s.Info.CountBytesSent(uint64(overheadsendws(msgBody) + len(msgBody)))
 	if err := conn.WriteMessage(websocket.TextMessage, msgBody); err != nil {
 		log.Println(err)

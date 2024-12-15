@@ -12,12 +12,12 @@ func ToWrappedJSON(b any) ([]byte, error) {
 	data, err := json.Marshal(b)
 	if err != nil {
 		log.Println(err.Error())
-		return []byte{}, err
+		return nil, err
 	}
 	wm := NewWrappedMessage(reflect.TypeOf(b).String(), string(data))
 	msg, err := json.Marshal(wm)
 	if err != nil {
-		return []byte{}, err
+		return nil, err
 	}
 	return msg, nil
 }

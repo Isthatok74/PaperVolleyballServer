@@ -28,8 +28,18 @@ func (s *ServerData) broadcastPlayerJoined(r *states.RegisteredInstance, player 
 	}
 }
 
+// helper function to assign a host to a registered instance if there is none specified
+func (s *ServerData) AssignHostIfNone(r *states.RegisteredInstance, player *states.PlayerState) {
+
+	// assign host if none assigned
+	if len(r.HostID) == 0 {
+		r.HostID = player.GUID
+	}
+	s.broadcastSyncHostMessage(r, r.HostID)
+}
+
 // broadcast the new host in a lobby
-func (s *ServerData) broadcastSyncHostMessage(lobby *states.LobbyState, hostID string) {
+func (s *ServerData) broadcastSyncHostMessage(r *states.RegisteredInstance, hostID string) {
 	msg := messages.SyncHostMessage{
 		HostID: hostID,
 	}
@@ -37,7 +47,7 @@ func (s *ServerData) broadcastSyncHostMessage(lobby *states.LobbyState, hostID s
 	if err != nil {
 		log.Printf("Unable to send new host message to lobby: %s", err)
 	} else {
-		s.broadcastws(sendMsg, &lobby.RegisteredInstance)
+		s.broadcastws(sendMsg, r)
 	}
 }
 

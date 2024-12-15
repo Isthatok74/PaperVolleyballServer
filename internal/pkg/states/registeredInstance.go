@@ -10,6 +10,7 @@ import (
 type RegisteredInstance struct {
 	ExpirableInstance
 	Players sync.Map `json:"Players"` // key: string; value: dummy flag (boolean)
+	HostID  string   `json:"HostID"`  // the id of the hosting player
 }
 
 // create a clone of the stored instance

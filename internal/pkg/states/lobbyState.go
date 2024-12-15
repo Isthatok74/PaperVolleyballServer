@@ -11,8 +11,6 @@ type LobbyState struct {
 	RegisteredInstance
 	RoomCode   string `json:"RoomCode"`   // the room code that players can enter to join
 	Background string `json:"Background"` // the string code for the background asset
-	HostID     string `json:"HostID"`     // the id of the hosting player
-	//mu       sync.Mutex // Mutex to protect concurrent access to member variables
 }
 
 // initialize a new gameState object

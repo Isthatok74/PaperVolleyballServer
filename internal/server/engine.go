@@ -294,10 +294,10 @@ func (s *ServerData) handleaddplayerlobby(conn *websocket.Conn, msgBody []byte) 
 	s.broadcastPlayerJoined(&lobby.RegisteredInstance, player)
 
 	// assign host if none assigned
-	if len(lobby.HostID) == 0 {
-		lobby.HostID = player.GUID
+	if len(lobby.RegisteredInstance.HostID) == 0 {
+		lobby.RegisteredInstance.HostID = player.GUID
 	}
-	s.broadcastSyncHostMessage(lobby, lobby.HostID)
+	s.broadcastSyncHostMessage(lobby, lobby.RegisteredInstance.HostID)
 
 	return structures.ToWrappedJSON(rq)
 }

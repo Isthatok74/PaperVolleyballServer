@@ -13,6 +13,16 @@ import (
 
 // This file contains the helper functions for the engine
 
+// helper function to assign a host to a registered instance if there is none specified
+func (s *ServerData) assignHostIfNone(r *states.RegisteredInstance, player *states.PlayerState) {
+
+	// assign host if none assigned
+	if len(r.HostID) == 0 {
+		r.HostID = player.GUID
+	}
+	s.broadcastSyncHostMessage(r, r.HostID)
+}
+
 // helper function to send one joining player's info to all connections in a registered instance
 func (s *ServerData) broadcastPlayerJoined(r *states.RegisteredInstance, player *states.PlayerState) {
 	includeMsg := messages.PlayerIncludeMessage{
@@ -26,16 +36,6 @@ func (s *ServerData) broadcastPlayerJoined(r *states.RegisteredInstance, player 
 	} else {
 		s.broadcastws(msg, r)
 	}
-}
-
-// helper function to assign a host to a registered instance if there is none specified
-func (s *ServerData) AssignHostIfNone(r *states.RegisteredInstance, player *states.PlayerState) {
-
-	// assign host if none assigned
-	if len(r.HostID) == 0 {
-		r.HostID = player.GUID
-	}
-	s.broadcastSyncHostMessage(r, r.HostID)
 }
 
 // broadcast the new host in a lobby

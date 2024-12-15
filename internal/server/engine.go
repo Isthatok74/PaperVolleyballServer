@@ -236,7 +236,7 @@ func (s *ServerData) handleaddplayergame(conn *websocket.Conn, msgBody []byte) (
 	s.broadcastPlayerJoined(&game.RegisteredInstance, player)
 
 	// assign them as host if there is none
-	s.AssignHostIfNone(&game.RegisteredInstance, player)
+	s.assignHostIfNone(&game.RegisteredInstance, player)
 
 	// respond by echoing the message
 	return structures.ToWrappedJSON(rq)
@@ -297,7 +297,7 @@ func (s *ServerData) handleaddplayerlobby(conn *websocket.Conn, msgBody []byte) 
 	s.broadcastPlayerJoined(&lobby.RegisteredInstance, player)
 
 	// assign them as host if there is none
-	s.AssignHostIfNone(&lobby.RegisteredInstance, player)
+	s.assignHostIfNone(&lobby.RegisteredInstance, player)
 
 	return structures.ToWrappedJSON(rq)
 }

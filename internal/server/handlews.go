@@ -145,6 +145,8 @@ func (s *ServerData) sendws(conn *websocket.Conn, msgBody []byte) {
 	s.Info.CountBytesSent(uint64(overheadsendws(msgBody) + len(msgBody)))
 	if err := conn.WriteMessage(websocket.TextMessage, msgBody); err != nil {
 		log.Println(err)
+	} else {
+		log.Printf("[->%s] %s", conn.RemoteAddr().String(), msgBody)
 	}
 }
 
@@ -219,7 +221,6 @@ func (s *ServerData) broadcastws(msgBody []byte, r *states.RegisteredInstance) {
 				return
 			}
 			s.sendws(wsConn, msgBody)
-			log.Printf("[->%s] %s", addr.String(), msgBody)
 		} else {
 			log.Printf("client not found: %s", addr.String())
 		}

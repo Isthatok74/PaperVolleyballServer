@@ -286,6 +286,19 @@ func (s *ServerData) handleaddplayerlobby(conn *websocket.Conn, msgBody []byte) 
 		return nil, fmt.Errorf("could not find lobby with room code: %s", roomCode)
 	}
 
+	// autoassign them to a team and a position on the court
+	isRightTeam := s.computeNewPlayerTeam(lobby)
+	player.PlayerAction.Pos.X = computeRandomPosX(isRightTeam)
+	player.PlayerAction.FaceRight = player.PlayerAction.Pos.X < 0
+	msgForcePosition, err := structures.ToWrappedJSON(messages.ForcePlayerMessage{
+		Action:         player.PlayerAction,
+		ServerPlayerID: player.GUID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to send player spawn loation: %s", err)
+	}
+	s.sendws(conn, msgForcePosition)
+
 	// store the player to the lobby
 	lobby.Players.LoadOrStore(serverPlayerID, true)
 	lobby.UpdateTime()
@@ -340,6 +353,7 @@ func (s *ServerData) handleplayeraction(msgBody []byte) ([]byte, error) {
 			return nil, fmt.Errorf("could not find player id in registry: %s", playerID)
 		}
 		player.UpdatePlayerState(&amsg.Action)
+		player.UpdateTime()
 	}
 
 	// find the game that it applies to
@@ -349,6 +363,7 @@ func (s *ServerData) handleplayeraction(msgBody []byte) ([]byte, error) {
 		if err != nil {
 			return nil, fmt.Errorf("could not find game id in registry: %s", gameID)
 		}
+		game.UpdateTime()
 
 		// just broadcast the action to all clients in the game
 		s.broadcastws(msgBody, &game.RegisteredInstance)
@@ -362,6 +377,7 @@ func (s *ServerData) handleplayeraction(msgBody []byte) ([]byte, error) {
 		if err != nil {
 			return nil, fmt.Errorf("could not find lobby with room code in registry: %s", roomCode)
 		}
+		lobby.UpdateTime()
 
 		// just broadcast the action to all clients in the lobby
 		s.broadcastws(msgBody, &lobby.RegisteredInstance)
@@ -387,6 +403,7 @@ func (s *ServerData) handleballevent(msgBody []byte) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("could not find game id in registry: %s", gameID)
 	}
+	game.UpdateTime()
 
 	// if for whatever reason the client's copy of the ball is out of date (e.g. someone else has registered a hit before them or the ball has already died), do not process the request and return a harmless error to the client
 	denyBallUpdate := func(reason string) ([]byte, error) {

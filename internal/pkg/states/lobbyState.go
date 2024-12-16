@@ -57,11 +57,6 @@ func (l *LobbyState) UpdateBackground(bgName string) {
 	l.Background = bgName
 }
 
-// update the team of a player in the lobby
-func (l *LobbyState) UpdateTeam(pguid string, rightSide bool) {
-	// todo: switch the player's team in the data
-}
-
 // create a game instance and migrate the current instance information to it
 func (l *LobbyState) CreateGameInstance() *GameState {
 	g := NewGameState()

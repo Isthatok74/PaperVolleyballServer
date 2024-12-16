@@ -2,7 +2,11 @@ package server
 
 import (
 	"log"
+	"math"
+	"math/rand"
+	"time"
 
+	"github.com/Isthatok74/PaperVolleyballServer/internal/pkg/defs"
 	"github.com/Isthatok74/PaperVolleyballServer/internal/pkg/messages"
 	"github.com/Isthatok74/PaperVolleyballServer/internal/pkg/states"
 	"github.com/Isthatok74/PaperVolleyballServer/internal/pkg/structures"
@@ -19,8 +23,8 @@ func (s *ServerData) assignHostIfNone(r *states.RegisteredInstance, player *stat
 	// assign host if none assigned
 	if len(r.HostID) == 0 {
 		r.HostID = player.GUID
+		s.broadcastSyncHostMessage(r, r.HostID)
 	}
-	s.broadcastSyncHostMessage(r, r.HostID)
 }
 
 // for a given leaving player, check if it is the host and reassign the host as necessary
@@ -64,6 +68,52 @@ func (s *ServerData) broadcastSyncHostMessage(r *states.RegisteredInstance, host
 	} else {
 		s.broadcastws(sendMsg, r)
 	}
+}
+
+// assigns a new player to the team with fewer players, or the left if both have same; returns the team that they are on; left = false, right = true
+func (s *ServerData) computeNewPlayerTeam(l *states.LobbyState) bool {
+	lCount, rCount := s.countTeamPlayers(&l.RegisteredInstance)
+	return lCount > rCount
+}
+
+// a helper to return either 1 or -1 corresponding to the sides of the court
+func computeSideMultiplier(isRightSide bool) float32 {
+	var sideSign float32
+	if isRightSide {
+		sideSign = 1.0
+	}
+	if !isRightSide {
+		sideSign = -1.0
+	}
+	return sideSign
+}
+
+// return a random x position on the court on the given side
+func computeRandomPosX(isRightSide bool) float32 {
+	source := rand.NewSource(time.Now().UnixNano())
+	rand := rand.New(source)
+	randX := 1 + rand.Float64()*(defs.MaxCourtSpawnX-1)
+	sideSign := computeSideMultiplier(isRightSide)
+	return sideSign * float32(math.Abs(float64(randX)))
+}
+
+// count the number of players on either team
+func (s *ServerData) countTeamPlayers(r *states.RegisteredInstance) (int, int) {
+	lCount := 0
+	rCount := 0
+	r.Players.Range(func(pid, value interface{}) bool {
+		ptr, err := s.FindPlayer(pid.(string))
+		if err == nil {
+			isRight := ptr.PlayerAction.Pos.X > 0
+			if isRight {
+				rCount++
+			} else {
+				lCount++
+			}
+		}
+		return true
+	})
+	return lCount, rCount
 }
 
 // helper function to send data of all players in a game to a connection

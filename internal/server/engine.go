@@ -81,12 +81,18 @@ func (s *ServerData) processws(conn *websocket.Conn, msgBody []byte) ([]byte, er
 
 	} else if strings.Contains(typeVal, JsonTagRemPlayerGame) {
 
+		// remove player from game request
 		return s.handleleavegame(msgBody)
 
 	} else if strings.Contains(typeVal, JsonTagCheckLobbyMsg) {
 
 		// check if a room code exists
 		return s.handlechecklobby(msgBody)
+
+	} else if strings.Contains(typeVal, JsonTagSwitchMsg) {
+
+		// switch player to other side request
+		return s.handleswitch(msgBody)
 
 	} else if strings.Contains(typeVal, JsonTagPlayerEvent) {
 
@@ -261,6 +267,55 @@ func (s *ServerData) handlechecklobby(msgBody []byte) ([]byte, error) {
 		response.Exists = err == nil
 	}
 	return structures.ToWrappedJSON(response)
+}
+
+// process a request from a player to switch sides
+func (s *ServerData) handleswitch(msgBody []byte) ([]byte, error) {
+	var rq messages.SwitchSideMessage
+	structures.FromWrappedJSON(&rq, msgBody)
+	pguid := rq.ServerPlayerID
+	roomCode := rq.RoomCode
+
+	// find lobby
+	lobby, err := s.FindLobby(roomCode)
+	if err != nil {
+		return nil, fmt.Errorf("unable to find lobby to switch player in")
+	}
+
+	// find player
+	player, err := s.FindPlayer(pguid)
+	if err != nil {
+		return nil, fmt.Errorf("unable to find player in player map during switch request")
+	}
+
+	// check that they match
+	if player.RoomCode == lobby.RoomCode {
+
+		// process the switch by pushing a forced update and broadcasting the new position
+		player.Pos.X *= -1
+		player.FaceRight = !player.FaceRight
+
+	} else {
+		return nil, fmt.Errorf("player id %s not found in lobby %s during switch request", pguid, roomCode)
+	}
+
+	// broadcast an update with the player's new position
+	msg, err := structures.ToWrappedJSON(messages.PlayerActionMessage{
+		PlayerServerID: player.GUID,
+		Action:         player.PlayerAction,
+		RoomCode:       lobby.RoomCode,
+	})
+	if err != nil {
+		return nil, err
+	} else {
+		s.broadcastws(msg, &lobby.RegisteredInstance)
+	}
+
+	// send a forced update back to the client to switch the user
+	return structures.ToWrappedJSON(messages.ForcePlayerMessage{
+		ServerPlayerID: player.GUID,
+		Action:         player.PlayerAction,
+	})
 }
 
 // process a player add to lobby request

@@ -116,6 +116,19 @@ func (s *ServerData) countTeamPlayers(r *states.RegisteredInstance) (int, int) {
 	return lCount, rCount
 }
 
+// send the current backdrop's resource name in the lobby to a player, if null
+func (s *ServerData) sendCurrentBackdrop(conn *websocket.Conn, lobby *states.LobbyState) {
+	msgBackdrop, err := structures.ToWrappedJSON(messages.SetBackdropMessage{
+		ResourceName: lobby.Backdrop,
+		RoomCode:     lobby.RoomCode,
+	})
+	if err != nil {
+		log.Printf("failed to send backdrop resource name: %s", err)
+	} else {
+		s.sendws(conn, msgBackdrop)
+	}
+}
+
 // helper function to send data of all players in a game to a connection
 func (s *ServerData) sendGamePlayerIncludes(conn *websocket.Conn, r *states.RegisteredInstance) {
 	r.Players.Range(func(pid, _ interface{}) bool {

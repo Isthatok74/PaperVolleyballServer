@@ -84,6 +84,11 @@ func (s *ServerData) processws(conn *websocket.Conn, msgBody []byte) ([]byte, er
 		// remove player from game request
 		return s.handleleavegame(msgBody)
 
+	} else if strings.Contains(typeVal, JsonTagSetBackdrop) {
+
+		// set the backdrop resource name
+		return s.handlesetbackdrop(msgBody)
+
 	} else if strings.Contains(typeVal, JsonTagCheckLobbyMsg) {
 
 		// check if a room code exists
@@ -354,6 +359,9 @@ func (s *ServerData) handleaddplayerlobby(conn *websocket.Conn, msgBody []byte) 
 	}
 	s.sendws(conn, msgForcePosition)
 
+	// send the background image resource name to the client
+	s.sendCurrentBackdrop(conn, lobby)
+
 	// store the player to the lobby
 	lobby.Players.LoadOrStore(serverPlayerID, true)
 	lobby.UpdateTime()
@@ -388,6 +396,19 @@ func (s *ServerData) handleleavegame(msgBody []byte) ([]byte, error) {
 	pid := rq.PlayerServerID
 	s.removePlayerGame(pid, gameID)
 	return msgBody, nil
+}
+
+// handle a request to change the backdrop in a lobby
+func (s *ServerData) handlesetbackdrop(msgBody []byte) ([]byte, error) {
+	var rq messages.SetBackdropMessage
+	structures.FromWrappedJSON(&rq, msgBody)
+	lobby, err := s.FindLobby(rq.RoomCode)
+	if err != nil {
+		return nil, fmt.Errorf("could not find lobby with room code in registry: %s", rq.RoomCode)
+	}
+	lobby.Backdrop = rq.ResourceName
+	s.broadcastws(msgBody, &lobby.RegisteredInstance)
+	return nil, nil
 }
 
 // process a player action received from the client

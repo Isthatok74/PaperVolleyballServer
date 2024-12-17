@@ -9,8 +9,8 @@ import (
 // represents a game instance on the server, with all its associated data stored
 type LobbyState struct {
 	RegisteredInstance
-	RoomCode   string `json:"RoomCode"`   // the room code that players can enter to join
-	Background string `json:"Background"` // the string code for the background asset
+	RoomCode string `json:"RoomCode"`   // the room code that players can enter to join
+	Backdrop string `json:"Background"` // the string code for the background asset
 }
 
 // initialize a new gameState object
@@ -51,11 +51,6 @@ func (l *LobbyState) generateRoomCode(lobbyMap *sync.Map) bool {
 
 const maxNumRoomCodeTries = 10000
 const NumRoomCodeChars = 4
-
-// update the background of the lobby
-func (l *LobbyState) UpdateBackground(bgName string) {
-	l.Background = bgName
-}
 
 // create a game instance and migrate the current instance information to it
 func (l *LobbyState) CreateGameInstance() *GameState {
